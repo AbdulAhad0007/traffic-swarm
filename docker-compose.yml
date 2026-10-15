@@ -1,0 +1,4 @@
+# Docker Compose for Traffic Swarm Intelligence
+# MySQL has been replaced by Supabase (cloud-hosted PostgreSQL).
+# This file is kept for optional local services only.
+services: {}

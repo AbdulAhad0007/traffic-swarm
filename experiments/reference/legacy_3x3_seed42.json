@@ -1,0 +1,167 @@
+{
+  "description": "Fixed-time baseline KPIs of the ORIGINAL legacy 3x3 network (grid3x3_legacy), seed 42, copied from experiments/runs/<scenario>/seed-42/comparison.json produced before Phase 1. Re-running the baseline with SUMO 1.27.1 must reproduce these values (checked by simulation/test_sumo_smoke.py). The pre-Phase-1 swarm values are kept for comparison only.",
+  "sumo_version_verified": "1.27.1",
+  "seed": 42,
+  "scenarios": {
+    "normal": {
+      "baseline": {
+        "vehicles_observed": 678,
+        "vehicles_arrived": 678,
+        "throughput": 678,
+        "average_delay_s": 11.82448377581121,
+        "total_waiting_time_s": 8017.0,
+        "max_queue": 26,
+        "average_queue": 8.572025052192068,
+        "average_travel_time_s": 32.36283185840708,
+        "average_stops": 0.8289085545722714,
+        "fuel_mg": 16997676.003236342,
+        "co2_mg": 52431717.83109543,
+        "samples": 958,
+        "timed_out": false
+      },
+      "swarm_pre_phase1": {
+        "vehicles_observed": 678,
+        "vehicles_arrived": 678,
+        "throughput": 678,
+        "average_delay_s": 11.781710914454278,
+        "total_waiting_time_s": 7988.0,
+        "max_queue": 18,
+        "average_queue": 8.551148225469728,
+        "average_travel_time_s": 32.27728613569322,
+        "average_stops": 0.8407079646017699,
+        "fuel_mg": 16959833.490687493,
+        "co2_mg": 52314987.32190285,
+        "samples": 958,
+        "timed_out": false
+      }
+    },
+    "rush-hour": {
+      "baseline": {
+        "vehicles_observed": 1218,
+        "vehicles_arrived": 1218,
+        "throughput": 1218,
+        "average_delay_s": 14.747947454844006,
+        "total_waiting_time_s": 17963.0,
+        "max_queue": 50,
+        "average_queue": 18.801670146137788,
+        "average_travel_time_s": 35.82512315270936,
+        "average_stops": 0.6412151067323482,
+        "fuel_mg": 32242706.642292235,
+        "co2_mg": 99456936.51996803,
+        "samples": 958,
+        "timed_out": false
+      },
+      "swarm_pre_phase1": {
+        "vehicles_observed": 1218,
+        "vehicles_arrived": 1218,
+        "throughput": 1218,
+        "average_delay_s": 13.655993431855501,
+        "total_waiting_time_s": 16633.0,
+        "max_queue": 34,
+        "average_queue": 17.43319415448852,
+        "average_travel_time_s": 34.7816091954023,
+        "average_stops": 0.6609195402298851,
+        "fuel_mg": 31894677.415614057,
+        "co2_mg": 98383457.80060735,
+        "samples": 958,
+        "timed_out": false
+      }
+    },
+    "uneven": {
+      "baseline": {
+        "vehicles_observed": 1348,
+        "vehicles_arrived": 1348,
+        "throughput": 1348,
+        "average_delay_s": 18.300445103857566,
+        "total_waiting_time_s": 24669.0,
+        "max_queue": 46,
+        "average_queue": 20.27823240589198,
+        "average_travel_time_s": 39.195845697329375,
+        "average_stops": 0.6409495548961425,
+        "fuel_mg": 36647111.02015136,
+        "co2_mg": 113042633.89429423,
+        "samples": 1222,
+        "timed_out": false
+      },
+      "swarm_pre_phase1": {
+        "vehicles_observed": 1348,
+        "vehicles_arrived": 1348,
+        "throughput": 1348,
+        "average_delay_s": 18.706231454005934,
+        "total_waiting_time_s": 25216.0,
+        "max_queue": 46,
+        "average_queue": 20.591056910569105,
+        "average_travel_time_s": 39.75222551928783,
+        "average_stops": 0.6520771513353115,
+        "fuel_mg": 37059284.45619981,
+        "co2_mg": 114314025.28798178,
+        "samples": 1230,
+        "timed_out": false
+      }
+    },
+    "sudden-congestion": {
+      "baseline": {
+        "vehicles_observed": 1576,
+        "vehicles_arrived": 1576,
+        "throughput": 1576,
+        "average_delay_s": 17.898477157360407,
+        "total_waiting_time_s": 28208.0,
+        "max_queue": 47,
+        "average_queue": 14.75808133472367,
+        "average_travel_time_s": 38.96573604060914,
+        "average_stops": 0.6288071065989848,
+        "fuel_mg": 42939602.079690844,
+        "co2_mg": 132452660.1076499,
+        "samples": 1918,
+        "timed_out": false
+      },
+      "swarm_pre_phase1": {
+        "vehicles_observed": 1576,
+        "vehicles_arrived": 1576,
+        "throughput": 1576,
+        "average_delay_s": 18.256979695431472,
+        "total_waiting_time_s": 28773.0,
+        "max_queue": 39,
+        "average_queue": 14.87789799072643,
+        "average_travel_time_s": 39.558375634517766,
+        "average_stops": 0.6459390862944162,
+        "fuel_mg": 43614359.604054816,
+        "co2_mg": 134534034.8674948,
+        "samples": 1941,
+        "timed_out": false
+      }
+    },
+    "road-closure": {
+      "baseline": {
+        "vehicles_observed": 848,
+        "vehicles_arrived": 848,
+        "throughput": 848,
+        "average_delay_s": 12.331367924528301,
+        "total_waiting_time_s": 10457.0,
+        "max_queue": 35,
+        "average_queue": 11.078451882845188,
+        "average_travel_time_s": 33.12971698113208,
+        "average_stops": 0.7240566037735849,
+        "fuel_mg": 21674018.97931828,
+        "co2_mg": 66856533.14037556,
+        "samples": 956,
+        "timed_out": false
+      },
+      "swarm_pre_phase1": {
+        "vehicles_observed": 848,
+        "vehicles_arrived": 848,
+        "throughput": 848,
+        "average_delay_s": 11.974056603773585,
+        "total_waiting_time_s": 10154.0,
+        "max_queue": 23,
+        "average_queue": 10.75836820083682,
+        "average_travel_time_s": 32.806603773584904,
+        "average_stops": 0.7110849056603774,
+        "fuel_mg": 21613822.54335935,
+        "co2_mg": 66670859.21159968,
+        "samples": 956,
+        "timed_out": false
+      }
+    }
+  }
+}

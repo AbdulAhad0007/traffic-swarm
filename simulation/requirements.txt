@@ -1,0 +1,7 @@
+# Simulation / experiment dependencies (Phase 1 was verified with exactly these versions).
+# eclipse-sumo provides the sumo, sumo-gui and netconvert binaries inside the virtualenv's
+# Scripts/bin folder; skip it if SUMO is already installed system-wide (then keep traci at the
+# same version as your SUMO).
+eclipse-sumo==1.27.1
+traci==1.27.1
+pytest>=8,<10

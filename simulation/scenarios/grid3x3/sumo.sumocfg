@@ -1,0 +1,1 @@
+<configuration><input><net-file value="build.net.xml"/><route-files value="routes.rou.xml"/></input><time><begin value="0"/><end value="900"/></time><processing><time-to-teleport value="300"/></processing></configuration>

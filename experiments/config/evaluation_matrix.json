@@ -1,0 +1,40 @@
+{
+  "name": "eval-v1",
+  "description": "Initial validation matrix. Every cell (stage, network, scenario, seed) runs all of the stage's controllers on ONE prepared scenario: identical network, route file, demand seed and SUMO seed. demand_seed = seed, so seeds also vary the generated demand.",
+  "seeds": [42, 43, 44, 45, 46, 47, 48, 49, 50, 51],
+  "max_time_s": 3600,
+  "vary_demand": true,
+  "reference": "fixed",
+  "practical_threshold_pct": 5.0,
+  "stages": {
+    "core": {
+      "description": "Three-controller comparison on generated grids, all scenarios (road-closure = real SUMO closingReroute).",
+      "networks": ["grid3x3", "grid5x5", "grid9x9"],
+      "scenarios": ["normal", "rush-hour", "uneven", "sudden-congestion", "road-closure"],
+      "controllers": ["fixed", "actuated", "swarm"],
+      "comparisons": [["actuated", "fixed"], ["swarm", "fixed"], ["swarm", "actuated"]]
+    },
+    "ablation": {
+      "description": "Swarm module ablations (the safety gate is never disabled).",
+      "networks": ["grid5x5"],
+      "scenarios": ["normal", "rush-hour", "uneven", "sudden-congestion", "road-closure"],
+      "controllers": ["swarm", "swarm_no_blackboard", "swarm_no_pheromone", "swarm_prediction"],
+      "comparisons": [["swarm_no_blackboard", "swarm"], ["swarm_no_pheromone", "swarm"], ["swarm_prediction", "swarm"]]
+    },
+    "emergency": {
+      "description": "Ambulance priority vs the same controller without priority (3 ambulances per run).",
+      "networks": ["grid5x5"],
+      "scenarios": ["normal", "rush-hour"],
+      "controllers": ["fixed", "fixed_priority", "swarm", "swarm_priority"],
+      "ambulances": 3,
+      "comparisons": [["fixed_priority", "fixed"], ["swarm_priority", "swarm"]]
+    },
+    "mixed": {
+      "description": "Indian mixed traffic (assumed mix) on a left-hand 5x5 grid with pedestrians, and the Bengaluru OSM sample.",
+      "networks": ["grid5x5_india", "osm_bengaluru_mg_road"],
+      "scenarios": ["normal", "rush-hour", "uneven", "sudden-congestion", "road-closure"],
+      "controllers": ["fixed", "actuated", "swarm"],
+      "comparisons": [["actuated", "fixed"], ["swarm", "fixed"], ["swarm", "actuated"]]
+    }
+  }
+}

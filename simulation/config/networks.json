@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "description": "Network presets and controller settings. Add or edit presets here; no Python changes are needed. Preset sections are deep-merged over 'defaults'.",
+  "defaults": {
+    "grid": {
+      "block_length_m": 150,
+      "fringe_length_m": 120,
+      "lanes": 1,
+      "speed_mps": 13.9,
+      "pedestrians": false,
+      "lefthand": false
+    },
+    "tls": {
+      "default_type": "static",
+      "green_s": 30,
+      "yellow_s": 3,
+      "all_red_s": 1,
+      "crossing_min_s": 10,
+      "crossing_clearance_s": 5
+    },
+    "demand": {
+      "begin_s": 0,
+      "end_s": 900,
+      "straight_veh_per_hour": 240,
+      "turn_veh_per_hour": 60,
+      "demand_seed": 7,
+      "generator": "flows",
+      "vehicle_mix": "cars_only",
+      "persons_per_hour": 0,
+      "max_dropped_trip_share": 0.05
+    },
+    "simulation": {
+      "end_s": 3600,
+      "time_to_teleport_s": 300,
+      "lateral_resolution": null
+    }
+  },
+  "controller": {
+    "decision_interval_s": 5,
+    "min_green_s": 10,
+    "max_green_s": 60,
+    "max_red_s": 120,
+    "min_yellow_s": 3,
+    "pedestrian_min_green_s": 15,
+    "observation_ttl_s": 30,
+    "downstream_discount": 0.8,
+    "green_wave_cap_s": 45,
+    "max_consecutive_optimizer_failures": 3,
+    "max_risk": 1.0
+  },
+  "presets": {
+    "grid3x3_legacy": {
+      "type": "legacy",
+      "directory": "simulation/scenarios/grid3x3",
+      "note": "Original hand-written J1-J9 network, kept unchanged for regression tests."
+    },
+    "grid3x3": {
+      "type": "grid",
+      "rows": 3,
+      "cols": 3
+    },
+    "grid5x5": {
+      "type": "grid",
+      "rows": 5,
+      "cols": 5
+    },
+    "grid9x9": {
+      "type": "grid",
+      "rows": 9,
+      "cols": 9
+    },
+    "grid5x5_india": {
+      "type": "grid",
+      "rows": 5,
+      "cols": 5,
+      "grid": {
+        "lanes": 2,
+        "lefthand": true,
+        "pedestrians": true
+      },
+      "demand": {
+        "vehicle_mix": "india_urban_assumed",
+        "straight_veh_per_hour": 300,
+        "turn_veh_per_hour": 80,
+        "persons_per_hour": 300
+      },
+      "simulation": {
+        "lateral_resolution": 0.8
+      },
+      "note": "Left-hand traffic, 2 lanes, sidewalks + crossings, assumed Indian vehicle mix, sublane model so two-wheelers can filter."
+    },
+    "osm_bengaluru_mg_road": {
+      "type": "osm",
+      "osm_file": "simulation/scenarios/osm/bengaluru_mg_road/map.osm",
+      "source": {
+        "name": "OpenStreetMap extract, Bengaluru MG Road area",
+        "bbox_swne": [
+          12.97,
+          77.603,
+          12.978,
+          77.613
+        ],
+        "retrieved": "2026-10-13 via Overpass API",
+        "license": "ODbL 1.0, (c) OpenStreetMap contributors",
+        "readme": "simulation/scenarios/osm/bengaluru_mg_road/README.md"
+      },
+      "osm": {
+        "lefthand": true,
+        "pedestrians": false,
+        "keep_vclasses": "passenger",
+        "discard_simple_tls": false
+      },
+      "demand": {
+        "generator": "trips",
+        "vehicle_mix": "india_urban_assumed",
+        "vehicles_per_hour": 1400,
+        "demand_seed": 11
+      },
+      "simulation": {
+        "lateral_resolution": 0.8
+      },
+      "fallback_preset": "grid5x5_india"
+    },
+    "osm_bengaluru_mg_road_ped": {
+      "type": "osm",
+      "osm_file": "simulation/scenarios/osm/bengaluru_mg_road/map.osm",
+      "source": {
+        "name": "OpenStreetMap extract, Bengaluru MG Road area",
+        "bbox_swne": [
+          12.97,
+          77.603,
+          12.978,
+          77.613
+        ],
+        "retrieved": "2026-10-13 via Overpass API",
+        "license": "ODbL 1.0, (c) OpenStreetMap contributors",
+        "readme": "simulation/scenarios/osm/bengaluru_mg_road/README.md"
+      },
+      "osm": {
+        "lefthand": true,
+        "pedestrians": true,
+        "discard_simple_tls": false
+      },
+      "demand": {
+        "generator": "trips",
+        "vehicle_mix": "india_urban_assumed",
+        "vehicles_per_hour": 1400,
+        "persons_per_hour": 600,
+        "demand_seed": 11
+      },
+      "simulation": {
+        "lateral_resolution": 0.8
+      },
+      "fallback_preset": "grid5x5_india"
+    },
+    "osm_user": {
+      "type": "osm",
+      "osm_file": null,
+      "source": {
+        "name": "user supplied (pass --osm-file)"
+      },
+      "osm": {
+        "lefthand": true,
+        "pedestrians": false,
+        "keep_vclasses": "passenger"
+      },
+      "demand": {
+        "generator": "trips",
+        "vehicle_mix": "india_urban_assumed",
+        "vehicles_per_hour": 1200,
+        "demand_seed": 11
+      },
+      "fallback_preset": "grid5x5_india",
+      "note": "Template for your own extract: run with --osm-file path/to/area.osm. Without a file it falls back to fallback_preset and records that in the run metadata."
+    }
+  },
+  "scenarios": {
+    "_note": "Applied to generated and OSM networks. Segments are [start_fraction, end_fraction, demand_multiplier] of the demand window. The legacy J1-J9 preset keeps its original multiplier scenarios.",
+    "normal": {
+      "segments": [
+        [
+          0,
+          1,
+          1.0
+        ]
+      ]
+    },
+    "rush-hour": {
+      "segments": [
+        [
+          0,
+          0.33,
+          1.2
+        ],
+        [
+          0.33,
+          0.67,
+          2.0
+        ],
+        [
+          0.67,
+          1,
+          1.4
+        ]
+      ]
+    },
+    "uneven": {
+      "segments": [
+        [
+          0,
+          1,
+          1.0
+        ]
+      ],
+      "side_weights": {
+        "N": 1.8,
+        "S": 1.8,
+        "E": 0.6,
+        "W": 0.6
+      }
+    },
+    "sudden-congestion": {
+      "segments": [
+        [
+          0,
+          0.33,
+          1.0
+        ],
+        [
+          0.33,
+          0.5,
+          2.5
+        ],
+        [
+          0.5,
+          1,
+          1.0
+        ]
+      ]
+    },
+    "road-closure": {
+      "segments": [
+        [
+          0,
+          1,
+          1.0
+        ]
+      ],
+      "closure": {
+        "edge": "auto",
+        "begin_s": 180,
+        "end_s": null
+      }
+    }
+  }
+}

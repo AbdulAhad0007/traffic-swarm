@@ -1,0 +1,9 @@
+<routes>
+ <vType id="car" accel="2.6" decel="4.5" sigma="0.5" length="5" minGap="2.5" maxSpeed="13.9"/>
+ <route id="r1" edges="J1J2 J2J3"/><route id="r2" edges="J3J2 J2J1"/><route id="r3" edges="J4J5 J5J6"/><route id="r4" edges="J6J5 J5J4"/>
+ <route id="r5" edges="J7J8 J8J9"/><route id="r6" edges="J9J8 J8J7"/><route id="r7" edges="J1J4 J4J7"/><route id="r8" edges="J7J4 J4J1"/>
+ <flow id="f1" type="car" route="r1" begin="0" end="900" vehsPerHour="450"/><flow id="f2" type="car" route="r2" begin="0" end="900" vehsPerHour="450"/>
+ <flow id="f3" type="car" route="r3" begin="0" end="900" vehsPerHour="350"/><flow id="f4" type="car" route="r4" begin="0" end="900" vehsPerHour="350"/>
+ <flow id="f5" type="car" route="r5" begin="0" end="900" vehsPerHour="300"/><flow id="f6" type="car" route="r6" begin="0" end="900" vehsPerHour="300"/>
+ <flow id="f7" type="car" route="r7" begin="0" end="900" vehsPerHour="250"/><flow id="f8" type="car" route="r8" begin="0" end="900" vehsPerHour="250"/>
+</routes>

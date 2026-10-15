@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "Congestion levels for the live heatmap, replay and prediction classes. A junction's level is the WORSE of its occupancy level and its queue-per-lane level, both measured on the junction's incoming vehicle lanes (TraCI lane occupancy and halting-vehicle counts, speed < 0.1 m/s). Thresholds are project conventions for visualisation, not a standard level-of-service definition.",
+  "sample_interval_s": 5,
+  "state_interval_s": 5,
+  "levels": [
+    {"name": "free",   "max_occupancy": 0.10, "max_queue_per_lane": 1.0},
+    {"name": "light",  "max_occupancy": 0.25, "max_queue_per_lane": 3.0},
+    {"name": "heavy",  "max_occupancy": 0.45, "max_queue_per_lane": 6.0},
+    {"name": "severe", "max_occupancy": null, "max_queue_per_lane": null}
+  ],
+  "no_data_level": "no_data"
+}
