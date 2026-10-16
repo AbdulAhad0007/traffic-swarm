@@ -3,3 +3,6 @@ uvicorn>=0.28.0
 numpy
 scipy
 matplotlib
+traci
+sumolib
+eclipse-sumo

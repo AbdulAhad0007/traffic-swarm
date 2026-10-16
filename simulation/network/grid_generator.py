@@ -93,8 +93,21 @@ def find_sumo_binary(name: str) -> str | None:
         return found
     import os
     home = os.environ.get("SUMO_HOME")
+    if not home:
+        try:
+            import sumo
+            home = getattr(sumo, "SUMO_HOME", None)
+            if home and "SUMO_HOME" not in os.environ:
+                os.environ["SUMO_HOME"] = str(home)
+        except ImportError:
+            pass
     if home:
-        for candidate in (Path(home) / "bin" / name, Path(home) / "bin" / f"{name}.exe"):
+        for candidate in (
+            Path(home) / "bin" / name,
+            Path(home) / "bin" / f"{name}.exe",
+            Path(home) / name,
+            Path(home) / f"{name}.exe",
+        ):
             if candidate.is_file():
                 return str(candidate)
     return None
@@ -133,3 +146,4 @@ def build_grid(preset: dict, out_dir: Path) -> Path:
     if proc.returncode != 0 or not net.is_file():
         raise RuntimeError(f"netconvert failed (exit {proc.returncode}); see {out_dir / 'netconvert.log'}")
     return net
+

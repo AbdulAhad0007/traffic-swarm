@@ -19,6 +19,18 @@ from simulation.live.recorder import RunCancelled
 
 
 def main() -> int:
+    try:
+        import sumo, os
+        if hasattr(sumo, "SUMO_HOME"):
+            os.environ.setdefault("SUMO_HOME", str(sumo.SUMO_HOME))
+            tools = os.path.join(str(sumo.SUMO_HOME), "tools")
+            bin_dir = os.path.join(str(sumo.SUMO_HOME), "bin")
+            if tools not in sys.path:
+                sys.path.append(tools)
+            if bin_dir not in os.environ.get("PATH", ""):
+                os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+    except ImportError:
+        pass
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     p = argparse.ArgumentParser()
     p.add_argument("--job-dir", type=Path, required=True)
@@ -68,3 +80,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

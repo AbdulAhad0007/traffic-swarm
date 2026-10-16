@@ -21,6 +21,19 @@ manager = JobManager(ROOT, max_running=int(os.environ.get("TSI_LAB_MAX_RUNNING",
 RUN_ID = re.compile(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+){0,4}$")
 NAME = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 
+try:
+    import sumo, sys
+    if hasattr(sumo, "SUMO_HOME"):
+        os.environ.setdefault("SUMO_HOME", str(sumo.SUMO_HOME))
+        tools = os.path.join(str(sumo.SUMO_HOME), "tools")
+        bin_dir = os.path.join(str(sumo.SUMO_HOME), "bin")
+        if tools not in sys.path:
+            sys.path.append(tools)
+        if bin_dir not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+except ImportError:
+    pass
+
 app = FastAPI(title="Traffic Swarm Intelligence Lab", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.environ.get(
     "TSI_WEB_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()],
@@ -216,3 +229,4 @@ def report(name: str):
     if data is None:
         raise HTTPException(404, "report not found")
     return data
+

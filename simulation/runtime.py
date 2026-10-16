@@ -12,8 +12,23 @@ try:
     import traci
     import traci.constants as tc
 except ImportError:
-    traci = None
-    tc = None
+    try:
+        import sys
+        import sumo
+        home = getattr(sumo, 'SUMO_HOME', None)
+        if home:
+            os.environ.setdefault('SUMO_HOME', str(home))
+            tools = os.path.join(str(home), 'tools')
+            bin_dir = os.path.join(str(home), 'bin')
+            if tools not in sys.path:
+                sys.path.append(tools)
+            if bin_dir not in os.environ.get('PATH', ''):
+                os.environ['PATH'] = bin_dir + os.pathsep + os.environ.get('PATH', '')
+        import traci
+        import traci.constants as tc
+    except ImportError:
+        traci = None
+        tc = None
 from simulation.network.grid_generator import find_sumo_binary
 from simulation.telemetry import TelemetryCollector
 
