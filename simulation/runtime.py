@@ -125,6 +125,7 @@ class SumoSession:
         self.now = 0.0
         self.lane_values: dict = {}
         self.tl_values: dict = {}
+        self.vehicle_values: dict = {}
         self.auditor = auditor
         self.output_dir = Path(output_dir) if output_dir is not None else None
         closure = closure_from_cfg(self.sumocfg)
@@ -186,11 +187,12 @@ class SumoSession:
         """Advance one step, record vehicle/queue telemetry, return total halting vehicles."""
         traci.simulationStep()
         self.now = traci.simulation.getTime()
-        vehicle_vars = [tc.VAR_WAITING_TIME, tc.VAR_SPEED, tc.VAR_FUELCONSUMPTION, tc.VAR_CO2EMISSION]
+        vehicle_vars = [tc.VAR_WAITING_TIME, tc.VAR_SPEED, tc.VAR_FUELCONSUMPTION, tc.VAR_CO2EMISSION, tc.VAR_ROAD_ID]
         self.departed_ids = list(traci.simulation.getDepartedIDList())
         for vid in self.departed_ids:
             traci.vehicle.subscribe(vid, vehicle_vars)
-        for vid, v in traci.vehicle.getAllSubscriptionResults().items():
+        self.vehicle_values = traci.vehicle.getAllSubscriptionResults()
+        for vid, v in self.vehicle_values.items():
             collector.observe_vehicle(vid, self.now, v[tc.VAR_WAITING_TIME], v[tc.VAR_SPEED],
                                       v[tc.VAR_FUELCONSUMPTION], v[tc.VAR_CO2EMISSION])
         self.arrived_ids = list(traci.simulation.getArrivedIDList())

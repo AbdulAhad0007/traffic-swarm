@@ -179,6 +179,28 @@ def job_result(job_id: str):
                          "synchronization": j.get("synchronization")}}
 
 
+@app.get("/api/lab/jobs/{job_id}/calls")
+def job_calls(job_id: str, limit: int = Query(100, ge=1, le=1000)):
+    j, d = _job(job_id)
+    dirs = part_dirs(j, d)
+    for c, path in dirs.items():
+        calls_file = path / "swarm_calls.jsonl"
+        if calls_file.is_file():
+            records = []
+            with calls_file.open(encoding="utf-8") as f:
+                for line in f:
+                    if line.strip():
+                        records.append(json.loads(line))
+            from simulation.coordination.green_wave import summarize_calls
+            return {"summary": summarize_calls(records), "calls": records[-limit:]}
+    summary_file = d / "run" / "swarm" / "swarm_summary.json"
+    if summary_file.is_file():
+        s = _json(summary_file)
+        if s and "green_wave" in s:
+            return {"summary": s["green_wave"], "calls": []}
+    return {"summary": None, "calls": []}
+
+
 # ---------------------------------------------------------------------- saved runs and reports
 def _run_dir(run_id: str) -> Path:
     runs = (ROOT / "experiments" / "runs").resolve()
@@ -213,6 +235,27 @@ def run_replay(id: str, controller: str):
         raise HTTPException(400, "invalid controller directory")
     d = _run_dir(id) / controller
     return {**replay_frames(d), "layout": _json(d / "live" / "layout.json")}
+
+
+@app.get("/api/lab/runs/calls")
+def run_calls(id: str, limit: int = Query(100, ge=1, le=1000)):
+    d = _run_dir(id)
+    for cand in [d / "swarm", d]:
+        f = cand / "swarm_calls.jsonl"
+        if f.is_file():
+            records = []
+            with f.open(encoding="utf-8") as fp:
+                for line in fp:
+                    if line.strip():
+                        records.append(json.loads(line))
+            from simulation.coordination.green_wave import summarize_calls
+            return {"summary": summarize_calls(records), "calls": records[-limit:]}
+    summary_file = d / "swarm" / "swarm_summary.json"
+    if summary_file.is_file():
+        s = _json(summary_file)
+        if s and "green_wave" in s:
+            return {"summary": s["green_wave"], "calls": []}
+    return {"summary": None, "calls": []}
 
 
 @app.get("/api/lab/reports")

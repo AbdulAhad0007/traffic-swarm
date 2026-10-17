@@ -9,6 +9,7 @@ import { ChevronDown, Check, Search } from 'lucide-react';
  */
 export default function RichDropdown({
   options = [],
+  items,
   value,
   onChange,
   placeholder = 'Select option...',
@@ -22,6 +23,8 @@ export default function RichDropdown({
   const [query, setQuery] = useState('');
   const dropdownRef = useRef(null);
 
+  const opts = items || options || [];
+
   // Close on outside click
   useEffect(() => {
     function handleClickOutside(event) {
@@ -29,13 +32,22 @@ export default function RichDropdown({
         setOpen(false);
       }
     }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
-  const selectedOption = options.find(o => (typeof o === 'string' ? o === value : o.value === value));
+  const selectedOption = opts.find(o => (typeof o === 'string' ? o === value : o.value === value));
 
-  const filteredOptions = options.filter(o => {
+  const filteredOptions = opts.filter(o => {
     if (!query) return true;
     const text = typeof o === 'string' ? o : `${o.label || o.value} ${o.sub || ''} ${o.badge || ''}`;
     return text.toLowerCase().includes(query.toLowerCase());
@@ -48,7 +60,7 @@ export default function RichDropdown({
   const getOptionIcon = opt => (typeof opt === 'object' ? opt.icon : null);
 
   return (
-    <div className={`rich-dropdown-wrap ${className}`} ref={dropdownRef}>
+    <div className={`rich-dropdown-wrap ${open ? 'open' : ''} ${className}`} ref={dropdownRef}>
       {label && <label className="rich-dropdown-label">{label}</label>}
 
       <button
@@ -78,7 +90,7 @@ export default function RichDropdown({
 
       {open && (
         <div className="rich-dropdown-menu" role="listbox">
-          {searchable && options.length > 4 && (
+          {searchable && opts.length > 4 && (
             <div className="dropdown-search-box">
               <Search size={14} className="search-icon" />
               <input

@@ -1,10 +1,10 @@
-import Results from '@/components/Results';
+import MixedTrafficSimulator from '@/components/MixedTrafficSimulator';
 
 export const metadata = {
-  title: 'Mixed Traffic — Traffic Swarm Intelligence',
-  description: 'Indian mixed traffic simulation with cars, motorcycles, auto-rickshaws and pedestrians',
+  title: 'Indian Mixed Traffic Simulation — Traffic Swarm Intelligence',
+  description: 'Heterogeneous vehicle optimization for Indian roads with auto-rickshaws, two-wheelers, cars and buses',
 };
 
 export default function MixedPage() {
-  return <Results view="mixed" />;
+  return <MixedTrafficSimulator />;
 }

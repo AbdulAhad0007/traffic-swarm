@@ -36,7 +36,7 @@ DECISION_FIELDS = ["time", "tick", "intersection", "phase_index", "phase_axis", 
                    "neighbors_stale", "neighbors_missing", "neighbor_pressure", "direction", "green_seconds",
                    "score", "action", "proposed_total_s", "coordinated_total_s", "status", "reason",
                    "applied_total_s", "remaining_set_s", "optimizer_ms", "algorithm", "input_source",
-                   "predicted_served", "predicted_competing"]
+                   "predicted_served", "predicted_competing", "green_wave_call"]
 
 
 def apply_green_duration(api, tls_id: str, phase_index: int, expected_state: str, remaining: float) -> tuple[bool, str]:
@@ -83,6 +83,8 @@ class AdaptiveController:
         self.use_blackboard = bool(s.get("use_blackboard", True))
         self.use_pheromone = bool(s.get("use_pheromone", True))
         self.use_prediction = bool(s.get("use_prediction", False))
+        self.use_green_wave = bool(s.get("use_green_wave", True))
+        self.green_wave = None
         self.predictor = predictor
         if self.use_prediction and self.predictor is None:
             from simulation.prediction.online import OnlinePredictor
@@ -96,6 +98,12 @@ class AdaptiveController:
         self.coordinator = MultiAgentCoordinator(float(self.settings["green_wave_cap_s"]), self.blackboard.neighbors)
         self.agents = {t: SignalAgent(t, pm, sorted(graph.get(t, {})))
                        for t, pm in build_all(model, self.settings).items()}
+        if self.use_green_wave:
+            try:
+                from simulation.coordination.green_wave import GreenWave
+                self.green_wave = GreenWave(self, model, self.settings, self.seed)
+            except Exception:
+                self.green_wave = None
         return self.agents
 
     # ------------------------------------------------------------------ one decision tick
@@ -188,6 +196,10 @@ class AdaptiveController:
             agent = self.agents[rec["intersection"]]
             green = agent.current_green()
             total = capped.get(rec["intersection"], rec["proposed_total_s"]) if rec["action"] == "serve" else rec["proposed_total_s"]
+            if self.green_wave is not None and green is not None:
+                total, wave_call = self.green_wave.constrain(rec["intersection"], green.index, now, total)
+                if wave_call:
+                    rec["green_wave_call"] = wave_call
             rec["coordinated_total_s"] = round(total, 3)
             obs = observations[rec["intersection"]]
             # Safety gate sees timing, phase state and limits only - never the optimizer score.
@@ -238,6 +250,8 @@ class AdaptiveController:
         session = SumoSession(sumocfg, self.seed, self.gui, auditor=auditor, output_dir=out, hooks=self.hooks, port=self.port)
         wall0 = time.perf_counter()
         session.start()
+        if self.green_wave is not None:
+            self.green_wave.start(session)
         decisions, events, ts, tick_ms, telemetry = [], [], [], [], TelemetryCollector()
         for agent in self.agents.values():
             events.append({"event": "agent_registered", "time": 0.0, "intersection": agent.tls_id, "mode": agent.mode,
@@ -250,6 +264,8 @@ class AdaptiveController:
             while session.running(max_time):
                 queue = session.step(telemetry)
                 now = session.now
+                if self.green_wave is not None:
+                    self.green_wave.step(session)
                 self._sync_phases(session, max_green, events)
                 if now >= next_decision:
                     t0 = time.perf_counter()
@@ -268,12 +284,15 @@ class AdaptiveController:
             session.close()
         summary["wall_time_s"] = round(time.perf_counter() - wall0, 3)
         summary["ablation"] = {"use_blackboard": self.use_blackboard, "use_pheromone": self.use_pheromone,
-                               "use_prediction": self.use_prediction, "safety_gate": "always_on"}
+                               "use_prediction": self.use_prediction, "use_green_wave": self.use_green_wave,
+                               "safety_gate": "always_on"}
         if self.predictor is not None:
             summary["prediction"] = self.predictor.report()
         for hook in self.hooks:
             if hasattr(hook, "report"):
                 summary.update(hook.report())
+        if self.green_wave is not None:
+            summary.update(self.green_wave.finish(out))
         summary.update(sumo_kpis(out, summary["vehicles_observed"], summary["vehicles_arrived"], timed_out))
         if session.closure is not None:
             summary["closure_check"] = session.closure.report()

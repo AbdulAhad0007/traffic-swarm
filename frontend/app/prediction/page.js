@@ -1,10 +1,10 @@
-import Results from '@/components/Results';
+import PredictionDashboard from '@/components/PredictionDashboard';
 
 export const metadata = {
-  title: 'Prediction — Traffic Swarm Intelligence',
-  description: 'Short-term traffic prediction evaluation with baseline and learned models',
+  title: 'AI Congestion & Traffic Prediction — Traffic Swarm Intelligence',
+  description: 'Real-time short-term AI traffic prediction with pre-emptive green wave intervention',
 };
 
 export default function PredictionPage() {
-  return <Results view="prediction" />;
+  return <PredictionDashboard />;
 }

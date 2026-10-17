@@ -5,6 +5,7 @@ import { Play, Square, OctagonX, Siren } from 'lucide-react';
 import { lab, fmt, colorOf } from '@/lib/api';
 import Heatmap from '@/components/Heatmap';
 import FuelSavedCard from '@/components/FuelSavedCard';
+import SwarmCallsPanel from '@/components/SwarmCallsPanel';
 
 export function useLabOptions() {
   const [opt, setOpt] = useState(null), [err, setErr] = useState('');
@@ -110,6 +111,7 @@ export default function LiveLab() {
           title={`${c} Live Real-Time Fuel & Ecological Telemetry`}
         />
       </div>
+      <SwarmCallsPanel jobId={sel} isLive={!['completed', 'failed', 'cancelled'].includes(job?.status)} />
     </section>}
   </>;
 }

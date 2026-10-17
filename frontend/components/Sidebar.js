@@ -22,7 +22,7 @@ import {
 
 const NAV_ITEMS = [
   { href: '/', label: 'Overview & Benchmark', icon: Activity, tag: 'CORE' },
-  { href: '/ghaziabad', label: 'Ghaziabad Live Map', icon: MapPin, tag: 'NCR' },
+  { href: '/ghaziabad', label: 'Live City Traffic Map', icon: MapPin, tag: 'MAP' },
   { href: '/live', label: 'Live Lab & Heatmap', icon: Radio, tag: 'LIVE' },
   { href: '/demo', label: 'Before / After Replay', icon: GitCompare, tag: 'DUAL' },
   { href: '/controllers', label: 'Controller Comparison', icon: SlidersHorizontal, tag: 'EVAL' },
