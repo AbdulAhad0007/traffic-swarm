@@ -1,0 +1,10 @@
+backend/
+optimizer/
+simulation/
+experiments/
+docs/
+backups/
+frontend_backup/
+tools/
+*.pyc
+__pycache__/

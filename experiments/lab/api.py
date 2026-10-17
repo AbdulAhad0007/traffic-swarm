@@ -9,7 +9,7 @@ allow-listed values (see jobs.validate_spec), saved runs are addressed by a vali
 that must resolve inside experiments/runs, and reports by a validated name.
 """
 from __future__ import annotations
-import csv, json, logging, os, re
+import csv, json, logging, os, re, threading
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -199,6 +199,94 @@ def job_calls(job_id: str, limit: int = Query(100, ge=1, le=1000)):
         if s and "green_wave" in s:
             return {"summary": s["green_wave"], "calls": []}
     return {"summary": None, "calls": []}
+
+
+@app.get("/api/lab/jobs/{job_id}/messages")
+def job_messages(job_id: str, limit: int = Query(200, ge=1, le=2000)):
+    """Inter-agent message log (platoon alerts and responses) written by the SUMO green wave."""
+    j, d = _job(job_id)
+    for path in part_dirs(j, d).values():
+        f = path / "swarm_messages.jsonl"
+        if f.is_file():
+            with f.open(encoding="utf-8") as fp:
+                lines = [json.loads(line) for line in fp if line.strip()]
+            return {"messages": lines[-limit:], "total": len(lines)}
+    return {"messages": [], "total": 0}
+
+
+# ---------------------------------------------------------------------- lookahead junction mesh (TraCI-free)
+# One shared in-memory demo: swarm agents and a static 30 s timer stepped on identical demand.
+_mesh_lock = threading.Lock()
+_mesh = {"demo": None}
+MESH_GRIDS = (3, 5, 9)
+
+
+def _mesh_demo():
+    from simulation.swarm.junction_mesh import LookaheadDemo
+    if _mesh["demo"] is None:
+        _mesh["demo"] = LookaheadDemo(grid=3)
+    return _mesh["demo"]
+
+
+def _mesh_mode(mode: str) -> str:
+    if mode not in ("swarm", "fixed"):
+        raise HTTPException(400, "mode must be 'swarm' or 'fixed'")
+    return mode
+
+
+@app.post("/api/lab/swarm/mesh/reset")
+def mesh_reset(body: dict | None = None):
+    from simulation.swarm.junction_mesh import LookaheadDemo
+    body = body or {}
+    grid, seed = body.get("grid", 3), body.get("seed", 42)
+    if grid not in MESH_GRIDS or not isinstance(seed, int) or not 0 <= seed < 2 ** 31:
+        raise HTTPException(400, f"grid must be one of {MESH_GRIDS}; seed an int in [0, 2^31)")
+    with _mesh_lock:
+        _mesh["demo"] = LookaheadDemo(grid=grid, seed=seed)
+        return {"grid": grid, "seed": seed, "t": 0}
+
+
+@app.post("/api/lab/swarm/mesh/step")
+def mesh_step(body: dict | None = None, mode: str = "swarm"):
+    seconds = (body or {}).get("seconds", 1)
+    if not isinstance(seconds, int) or not 1 <= seconds <= 3600:
+        raise HTTPException(400, "seconds must be an int in [1, 3600]")
+    with _mesh_lock:
+        demo = _mesh_demo()
+        demo.step(seconds)
+        return demo.state(_mesh_mode(mode))
+
+
+@app.get("/api/lab/swarm/mesh/state")
+def mesh_state(mode: str = "swarm"):
+    with _mesh_lock:
+        return _mesh_demo().state(_mesh_mode(mode))
+
+
+@app.get("/api/lab/swarm/mesh/messages")
+def mesh_messages(since: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=500)):
+    with _mesh_lock:
+        demo = _mesh_demo()
+        return {"t": demo.t, "messages": demo.messages(since, limit)}
+
+
+@app.get("/api/lab/swarm/mesh/fuel")
+def mesh_fuel():
+    with _mesh_lock:
+        demo = _mesh_demo()
+        return {"t": demo.t, **demo.fuel()}
+
+
+@app.post("/api/lab/swarm/mesh/emergency")
+def mesh_emergency():
+    with _mesh_lock:
+        demo = _mesh_demo()
+        if demo.emergency() and not all(demo.emergency()[m]["done"] for m in ("swarm", "fixed")):
+            raise HTTPException(409, "an ambulance corridor is already active")
+        try:
+            return demo.trigger_emergency()
+        except ValueError as exc:
+            raise HTTPException(400, str(exc))
 
 
 # ---------------------------------------------------------------------- saved runs and reports

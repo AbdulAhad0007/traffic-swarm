@@ -21,6 +21,10 @@ Every call is traced end to end in swarm_calls.jsonl:
   -> outcome: did the announced vehicles really pass the receiver without stopping, how far off
      the ETA was, and why vehicles that stopped did stop (red at arrival / queue ahead / ...).
 The pure decision function `plan_response` is TraCI-free and unit tested.
+
+Calls travel over explicit neighbour channels: `send_platoon_alert(sender, target_id, count, eta)` is the
+single entry point (used by the platoon detector and available to other agents), every (sender, receiver)
+pair keeps its own channel counters, and a human-readable inter-agent log is written to swarm_messages.jsonl.
 """
 from __future__ import annotations
 import json, math, random, statistics, time
@@ -186,6 +190,8 @@ class GreenWave:
         self.commitments: dict[str, list] = {}    # tls -> [{"phase","kind","total","until","call"}]
         self.n = 0
         self.kept_by_optimizer = 0
+        self.channels: dict[tuple, dict] = {}     # (sender, receiver) -> channel counters
+        self.messages: list[dict] = []            # inter-agent log (swarm_messages.jsonl)
 
     # ------------------------------------------------------------------ setup
     def start(self, session) -> None:
@@ -273,18 +279,44 @@ class GreenWave:
 
     def _send(self, key, now):
         batch = self.batches.pop(key)
-        self.n += 1
         etas = [v["eta_at"] for v in batch["vehicles"].values()]
+        self.send_platoon_alert(key[0], key[1], len(etas), min(etas) - now, target_phase=key[2],
+                                vehicles=batch["vehicles"], now=now)
+
+    def send_platoon_alert(self, sender: str, target_id: str, count: int, eta: float, *, now: float,
+                           target_phase: int | None = None, vehicles: dict | None = None) -> Call:
+        """Send "`count` vehicles reach you in ~`eta` s" from `sender` to its neighbour `target_id`.
+
+        `vehicles` (vid -> eta/link details) enables per-vehicle outcome tracking; without it the call is
+        still delivered and answered but its outcome stays 'unresolved'. Returns the Call.
+        """
+        if target_phase is None:
+            target_phase = self.ctl.agents[target_id].phase_map.greens[0].index
+        vehicles = vehicles or {}
+        etas = [v["eta_at"] for v in vehicles.values()] or [now + eta]
+        self.n += 1
         lost = self.rng.random() < float(self.cfg["drop_probability"])
         latency = float(self.cfg["comm_latency_s"]) + self.rng.uniform(0.0, float(self.cfg["comm_jitter_s"]))
-        call = Call(f"C{self.n:06d}", key[0], key[1], key[2], now, None if lost else now + latency,
-                    batch["vehicles"], min(etas), max(etas))
-        call.track = {v: {"seen": False, "stopped": False, "cause": None, "passed_at": None} for v in batch["vehicles"]}
+        call = Call(f"C{self.n:06d}", sender, target_id, target_phase, now, None if lost else now + latency,
+                    vehicles, min(etas), max(etas))
+        call.track = {v: {"seen": False, "stopped": False, "cause": None, "passed_at": None} for v in vehicles}
+        ch = self.channels.setdefault((sender, target_id), {"sent": 0, "lost": 0, "vehicles": 0, "last_sent_at": None})
+        ch["sent"] += 1
+        ch["vehicles"] += count
+        ch["last_sent_at"] = now
+        self._message(now, sender, target_id, "platoon_alert",
+                      f"Broadcasting {count} veh to {target_id} (ETA {max(0.0, call.eta_head - now):.0f}s, "
+                      f"phase {target_phase})." + (" Message lost." if lost else ""))
         if lost:
+            ch["lost"] += 1
             call.response, call.reason = None, "message_lost"
             self.open.append(call)          # still track the vehicles: what happens without the call
         else:
             self.inflight.append(call)
+        return call
+
+    def _message(self, now, sender, receiver, kind, text):
+        self.messages.append({"time": round(now, 2), "from": sender, "to": receiver, "kind": kind, "text": text})
 
     def _deliver(self, session, now):
         still = []
@@ -393,6 +425,10 @@ class GreenWave:
     def _respond(self, call, now, response, reason, total=None):
         call.responded_at, call.response, call.reason, call.total_set_s = now, response, reason, total
         self.open.append(call)
+        plan = f", green set to {total:.0f}s" if total is not None else ""
+        self._message(now, call.receiver, call.sender, "response",
+                      f"Received lookahead alert {call.id} from {call.sender}: {len(call.vehicles)} veh, "
+                      f"ETA {max(0.0, call.eta_head - now):.0f}s -> {response} ({reason}{plan}).")
 
     # ------------------------------------------------------------------ outcome verification
     def _track(self, session, now):
@@ -449,7 +485,13 @@ class GreenWave:
         with (Path(out_dir) / "swarm_calls.jsonl").open("w", encoding="utf-8") as f:
             for r in self.done:
                 f.write(json.dumps(r) + "\n")
-        return {"green_wave": summarize_calls(self.done, self.kept_by_optimizer, self.cfg)}
+        with (Path(out_dir) / "swarm_messages.jsonl").open("w", encoding="utf-8") as f:
+            for m in self.messages:
+                f.write(json.dumps(m) + "\n")
+        summary = summarize_calls(self.done, self.kept_by_optimizer, self.cfg)
+        summary["channels"] = {f"{a}->{b}": v for (a, b), v in sorted(self.channels.items())}
+        summary["messages_logged"] = len(self.messages)
+        return {"green_wave": summary}
 
 
 def summarize_calls(records: list, kept_by_optimizer: int = 0, cfg: dict | None = None) -> dict:

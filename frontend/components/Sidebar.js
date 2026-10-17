@@ -17,8 +17,10 @@ import {
   ShieldCheck,
   Cpu,
   Car,
-  MapPin
+  MapPin,
+  BookOpen
 } from 'lucide-react';
+import SwarmExplainerModal from '@/components/SwarmExplainerModal';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Overview & Benchmark', icon: Activity, tag: 'CORE' },
@@ -35,6 +37,7 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [explainerOpen, setExplainerOpen] = useState(false);
 
   // Track the mobile breakpoint so the drawer always shows full labels
   useEffect(() => {
@@ -177,6 +180,22 @@ export default function Sidebar() {
               </Link>
             );
           })}
+          <button
+            type="button"
+            className="sidebar-nav-item sidebar-explainer-btn"
+            onClick={() => { setExplainerOpen(true); setMobileOpen(false); }}
+            title={isCollapsed ? 'How Swarm Intelligence Works' : undefined}
+          >
+            <div className="nav-icon-wrap">
+              <BookOpen size={18} color="#a855f7" />
+            </div>
+            {!isCollapsed && (
+              <>
+                <span className="nav-label">How Swarm Intelligence Works</span>
+                <span className="nav-tag">VIVA</span>
+              </>
+            )}
+          </button>
         </nav>
 
         {/* Bottom System Telemetry Widget */}
@@ -198,6 +217,7 @@ export default function Sidebar() {
           </div>
         )}
       </aside>
+      <SwarmExplainerModal open={explainerOpen} onClose={() => setExplainerOpen(false)} />
     </>
   );
 }

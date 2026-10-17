@@ -1,33 +1,27 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
 import {
   MapPin,
-  Layers,
   Zap,
-  Activity,
-  Fuel,
-  IndianRupee,
-  ShieldCheck,
-  RotateCcw,
+  Timer,
   Play,
   Pause,
-  Sliders,
-  TrendingDown,
-  Info,
   Grid3x3,
   Map as MapIcon,
   Search,
-  Sparkles,
-  CheckCircle,
-  Navigation
+  Navigation,
+  Siren,
+  BookOpen,
+  Radio,
 } from 'lucide-react';
-import { fmt } from '@/lib/api';
-import FuelSavedCard from '@/components/FuelSavedCard';
 import RichDropdown from '@/components/RichDropdown';
-import { SUPPORTED_CITIES, CITY_INTERSECTIONS, generateCityGrid } from '@/lib/cityData';
+import SwarmTerminal from '@/components/SwarmTerminal';
+import SwarmImpactPanel from '@/components/SwarmImpactPanel';
+import SwarmExplainerModal from '@/components/SwarmExplainerModal';
+import { SUPPORTED_CITIES, generateCityGrid } from '@/lib/cityData';
+import { LookaheadDemo, SWARM, FIXED, FUEL, shortName } from '@/lib/swarmMesh';
 
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
 const ESRI_ATTR = 'Tiles © Esri';
@@ -77,6 +71,24 @@ const MAP_VIEW_OPTIONS = Object.entries(MAP_VIEWS).map(([value, v]) => ({
   badge: v.badge,
 }));
 
+const WARMUP_S = 90;          // simulated seconds run before the first frame so the map starts populated
+const SPEEDS = [1, 2, 4];
+const PHASE_COLOR = { G: '#10b981', Y: '#f59e0b', R: '#f43f5e' };
+const DECISION_TEXT = {
+  platoon_hold: 'Holding green for announced platoon',
+  empty_green: 'Dead green eliminated',
+  preempt_platoon: 'Pre-emptive switch for platoon',
+  pressure: 'Queue pressure (ACO-weighted)',
+  max_green: 'Max green reached',
+  anti_starvation: 'Anti-starvation release',
+  min_green: 'Minimum green (safety)',
+  rest_in_green: 'Resting in green (no demand)',
+  hold: 'Serving current queue',
+  emergency_corridor: 'Emergency corridor lock',
+};
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 // Area covered by convex hull of junctions
 function gridCoverage(junctions) {
   if (!junctions.length) return { areaKm2: 0, widthKm: 0, heightKm: 0, hull: [] };
@@ -111,17 +123,17 @@ function gridCoverage(junctions) {
   };
 }
 
-// Mesh edges: corridor connections between adjacent intersections
-function gridEdges(junctions, n) {
+// Mesh edges: row/column neighbours when every junction has its own grid cell, otherwise the 3 nearest
+function gridEdges(junctions) {
   const edges = new Set();
+  const lattice = new Set(junctions.map(j => `${j.gridRow},${j.gridCol}`)).size === junctions.length;
   junctions.forEach((a, i) => {
-    junctions.forEach((b, k) => {
-      if (k <= i) return;
-      const dRow = Math.abs(a.gridRow - b.gridRow);
-      const dCol = Math.abs(a.gridCol - b.gridCol);
-      if (n === 3 && dRow + dCol === 1) edges.add(`${i}-${k}`);
-    });
-    if (n === 3) return;
+    if (lattice) {
+      junctions.forEach((b, k) => {
+        if (k > i && Math.abs(a.gridRow - b.gridRow) + Math.abs(a.gridCol - b.gridCol) === 1) edges.add(`${i}-${k}`);
+      });
+      return;
+    }
     const kx = Math.cos((a.lat * Math.PI) / 180);
     junctions
       .map((b, k) => ({ k, d: Math.hypot(a.lat - b.lat, (a.lon - b.lon) * kx) }))
@@ -133,90 +145,360 @@ function gridEdges(junctions, n) {
   return [...edges].map(e => e.split('-').map(Number));
 }
 
+const markerShell = name => `
+  <div class="gzb-marker-wrap">
+    <div class="marker-pulse"></div>
+    <div class="marker-core"><span class="marker-queue">0</span></div>
+    <span class="marker-tag">${esc(shortName(name))}</span>
+    <span class="marker-incoming"></span>
+  </div>`;
+
 export default function GhaziabadLiveMap() {
   const mapContainerRef = useRef(null);
+  const fxCanvasRef = useRef(null);
   const leafletMapRef = useRef(null);
   const markersRef = useRef([]);
-  const polylinesRef = useRef([]);
-  const flowLinesRef = useRef([]);
+  const roadsRef = useRef([]);
+  const routeLayersRef = useRef([]);
   const tileLayersRef = useRef([]);
   const coverageLayerRef = useRef(null);
+  const packetsRef = useRef([]);
+  const lastStepRef = useRef(0);
+  const tooltipRef = useRef(() => '');
 
+  const [mapReady, setMapReady] = useState(false);
   const [selectedCityId, setSelectedCityId] = useState('ghaziabad');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [customLocation, setCustomLocation] = useState(null);
-
   const [gridSize, setGridSize] = useState(3);
   const [mapView, setMapView] = useState('dark');
-  const [activeMode, setActiveMode] = useState('swarm'); // 'baseline' | 'swarm'
-  const [showGridOverlay, setShowGridOverlay] = useState(true);
-  const [showFlowAnimation, setShowFlowAnimation] = useState(true);
-  const [selectedJunctionId, setSelectedJunctionId] = useState(null);
+  const [activeMode, setActiveMode] = useState(SWARM);
+  const [showLinks, setShowLinks] = useState(true);
+  const [showFlow, setShowFlow] = useState(true);
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [simTick, setSimTick] = useState(0);
+  const [speed, setSpeed] = useState(2);
+  const [, setTick] = useState(0);
+  const [explainerOpen, setExplainerOpen] = useState(false);
+  const [emRoute, setEmRoute] = useState(null);
 
   const currentCity = useMemo(() => {
     if (customLocation) return customLocation;
     return SUPPORTED_CITIES.find(c => c.id === selectedCityId) || SUPPORTED_CITIES[0];
   }, [selectedCityId, customLocation]);
 
-  // Compute junctions for active city & grid
+  // Junction grid for the active city; a searched place gets the Ghaziabad lattice re-centred on it
   const rawJunctions = useMemo(() => {
-    return generateCityGrid(currentCity.id, gridSize);
-  }, [currentCity, gridSize]);
+    const base = generateCityGrid(customLocation ? 'ghaziabad' : currentCity.id, gridSize);
+    if (!customLocation) return base;
+    const cLat = base.reduce((s, j) => s + j.lat, 0) / base.length;
+    const cLon = base.reduce((s, j) => s + j.lon, 0) / base.length;
+    return base.map(j => ({
+      ...j,
+      id: `${customLocation.id}-${j.gridRow + 1}-${j.gridCol + 1}`,
+      name: `${customLocation.name} · R${j.gridRow + 1}C${j.gridCol + 1}`,
+      corridor: customLocation.region,
+      lat: j.lat - cLat + customLocation.center[0],
+      lon: j.lon - cLon + customLocation.center[1],
+    }));
+  }, [currentCity, gridSize, customLocation]);
 
-  const coverage = useMemo(() => {
-    return gridCoverage(rawJunctions);
-  }, [rawJunctions]);
+  const coverage = useMemo(() => gridCoverage(rawJunctions), [rawJunctions]);
+  const edges = useMemo(() => gridEdges(rawJunctions), [rawJunctions]);
 
-  const edges = useMemo(() => {
-    return gridEdges(rawJunctions, gridSize);
-  }, [rawJunctions, gridSize]);
+  // The agent mesh: swarm + static-timer copies stepped together on identical demand
+  const demo = useMemo(() => {
+    const d = new LookaheadDemo(rawJunctions, edges);
+    d.step(WARMUP_S);
+    d.drainPackets();
+    return d;
+  }, [rawJunctions, edges]);
 
-  // Dynamic fluctuation based on tick & controller mode (continuous cars flow simulation)
-  const currentJunctions = useMemo(() => {
-    return rawJunctions.map((j, i) => {
-      const noise = Math.sin(simTick * 0.4 + j.lat * 12) * 4;
-      const isSwarm = activeMode === 'swarm';
-      const q = Math.max(2, Math.round((isSwarm ? j.swarmQueue : j.baseQueue) + noise));
-      const delay = Math.max(6, Math.round((isSwarm ? j.swarmDelay : j.baseDelay) + noise * 1.5));
-      const phase = (Math.floor(simTick / 3) + j.gridCol + j.gridRow) % 4; // 0=NS Green, 1=Yellow, 2=EW Green, 3=All Red
-      const phaseColor = phase === 0 || phase === 2 ? '#10b981' : phase === 1 ? '#f59e0b' : '#f43f5e';
-      const phaseName = phase === 0 ? 'NS Green' : phase === 1 ? 'Yellow Transition' : phase === 2 ? 'EW Green' : 'All-Red Clearance';
-      const pheromone = isSwarm ? Math.min(1.0, 0.2 + (q / 30) * 0.8).toFixed(2) : '0.00';
-      const carsPerMin = Math.max(12, Math.round((j.carsPerMin || 38) + (isSwarm ? 14 : -6) + Math.cos(simTick * 0.2) * 4));
-      const timeSavedSec = Math.max(15, Math.round((j.timeSavedSec || 45) + (isSwarm ? 8 : 0)));
-      const fuelSavedPct = (Number(j.fuelSavedPct || 19.5) + (isSwarm ? 2.5 : 0)).toFixed(1);
-
-      return {
-        ...j,
-        liveQueue: q,
-        liveDelay: delay,
-        phase,
-        phaseColor,
-        phaseName,
-        pheromone,
-        carsPerMin,
-        timeSavedSec,
-        fuelSavedPct,
-        status: q > 32 ? 'HEAVY' : q > 16 ? 'MODERATE' : 'CONTINUOUS FLOW',
-      };
-    });
-  }, [simTick, activeMode, rawJunctions]);
-
-  const selectedJunction = useMemo(() => {
-    return currentJunctions.find(j => j.id === selectedJunctionId) || currentJunctions[0];
-  }, [currentJunctions, selectedJunctionId]);
-
-  // Live simulation tick loop
   useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setSimTick(t => t + 1);
-    }, 1800);
-    return () => clearInterval(interval);
-  }, [isPlaying]);
+    packetsRef.current = [];
+    setEmRoute(null);
+    setSelectedIdx(demo.demand.hero);
+  }, [demo]);
+
+  // Simulation clock: one simulated second per step
+  useEffect(() => {
+    if (!isPlaying) return undefined;
+    const stepMs = 1000 / speed;
+    const durMs = Math.max(700, 1500 / Math.sqrt(speed));
+    const id = setInterval(() => {
+      demo.step(1);
+      const nowMs = performance.now();
+      lastStepRef.current = nowMs;
+      demo.drainPackets().forEach(p => {
+        packetsRef.current.push({ ...p, startMs: nowMs + Math.max(0, p.sentAt - demo.t) * stepMs, durMs });
+      });
+      setTick(t => t + 1);
+    }, stepMs);
+    return () => clearInterval(id);
+  }, [demo, isPlaying, speed]);
+
+  // Leaflet map (created once)
+  useEffect(() => {
+    const L = require('leaflet');
+    const map = L.map(mapContainerRef.current, { center: currentCity.center, zoom: currentCity.zoom, zoomControl: true, maxZoom: 18 });
+    map.attributionControl.setPrefix(false);
+    leafletMapRef.current = map;
+    setMapReady(true);
+    return () => {
+      map.remove();
+      leafletMapRef.current = null;
+      setMapReady(false);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Basemap tile layer switcher
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map) return;
+    const L = require('leaflet');
+    tileLayersRef.current.forEach(t => t.remove());
+    tileLayersRef.current = MAP_VIEWS[mapView].layers.map(({ url, ...opts }) =>
+      L.tileLayer(url, { maxZoom: 18, ...opts }).addTo(map)
+    );
+  }, [mapView, mapReady]);
+
+  // Fly to new city when city or custom location changes
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map || !currentCity) return;
+    const L = require('leaflet');
+    // Fit the grid, leaving room for the floating terminal (top-right) and status pill (bottom) on desktop
+    const wide = window.matchMedia('(min-width: 901px)').matches;
+    map.flyToBounds(L.latLngBounds(rawJunctions.map(j => [j.lat, j.lon])), {
+      paddingTopLeft: [50, 50],
+      paddingBottomRight: wide ? [420, 110] : [30, 30],
+      duration: 1.2,
+      maxZoom: 15,
+    });
+    coverageLayerRef.current?.remove();
+    if (coverage.hull && coverage.hull.length > 2) {
+      coverageLayerRef.current = L.polygon(coverage.hull, {
+        color: '#38bdf8',
+        weight: 2,
+        dashArray: '8, 6',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.06,
+        interactive: false,
+      }).addTo(map);
+    }
+  }, [rawJunctions, coverage, mapReady]);
+
+  // Corridor roads
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map) return;
+    const L = require('leaflet');
+    roadsRef.current.forEach(p => p.remove());
+    roadsRef.current = [];
+    if (!showLinks) return;
+    const isSwarm = activeMode === SWARM;
+    edges.forEach(([i, k]) => {
+      const a = rawJunctions[i];
+      const b = rawJunctions[k];
+      roadsRef.current.push(L.polyline([[a.lat, a.lon], [b.lat, b.lon]], {
+        color: isSwarm ? '#0284c7' : '#64748b', weight: isSwarm ? 5 : 4, opacity: isSwarm ? 0.55 : 0.45, interactive: false,
+      }).addTo(map));
+    });
+  }, [edges, rawJunctions, showLinks, activeMode, mapReady]);
+
+  // Signal markers (created per grid; updated in place every step)
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    if (!map) return;
+    const L = require('leaflet');
+    markersRef.current.forEach(m => m.remove());
+    const compact = gridSize >= 9;
+    markersRef.current = rawJunctions.map((j, i) => {
+      const icon = L.divIcon({
+        className: 'custom-leaflet-marker',
+        html: markerShell(j.name),
+        iconSize: compact ? [24, 24] : [36, 36],
+        iconAnchor: compact ? [12, 12] : [18, 18],
+      });
+      const marker = L.marker([j.lat, j.lon], { icon, riseOnHover: true }).addTo(map);
+      marker.bindTooltip('', { direction: 'top', className: 'rich-signal-tooltip', offset: [0, -16], opacity: 0.98 });
+      marker.on('tooltipopen', () => marker.setTooltipContent(tooltipRef.current(i)));
+      marker.on('click', () => setSelectedIdx(i));
+      return marker;
+    });
+  }, [rawJunctions, gridSize, mapReady]);
+
+  // Emergency corridor highlight
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    routeLayersRef.current.forEach(l => l.remove());
+    routeLayersRef.current = [];
+    if (!map || !emRoute) return;
+    const L = require('leaflet');
+    const pts = emRoute.map(i => [demo.junctions[i].lat, demo.junctions[i].lon]);
+    routeLayersRef.current = [
+      L.polyline(pts, { color: '#ef4444', weight: 16, opacity: 0.35, className: 'em-route-glow', interactive: false }).addTo(map),
+      L.polyline(pts, { color: '#ffffff', weight: 3, opacity: 0.95, dashArray: '10 10', className: 'em-route-dash', interactive: false }).addTo(map),
+    ];
+  }, [emRoute, demo, mapReady]);
+
+  const isSwarm = activeMode === SWARM;
+  const otherMode = isSwarm ? FIXED : SWARM;
+
+  const buildTooltip = useCallback(i => {
+    const j = rawJunctions[i];
+    if (!j) return '';
+    const v = demo.junctionView(activeMode, i);
+    const o = demo.junctionView(otherMode, i);
+    const inc = v.incoming[0];
+    const lg = a => (v.lastGreen[a] == null ? '—' : `${v.lastGreen[a]}s`);
+    const rupees = v.fuelSaved * FUEL.inr_per_l;
+    return `
+      <div class="signal-hover-card">
+        <div class="hover-title">${esc(j.name)}</div>
+        <div class="hover-place">📍 ${esc(currentCity.name)}${currentCity.region ? `, ${esc(currentCity.region)}` : ''}</div>
+        <div class="hover-flow-status">${isSwarm ? '🟢 Swarm JunctionAgent · ' + esc(DECISION_TEXT[v.decision] || 'Observing') : '🔴 Traditional static 30 s timer'}</div>
+        ${v.lock ? `<div class="hover-emergency">🚑 Emergency lock: holding ${v.lock} green</div>` : ''}
+        <div class="hover-grid-stats">
+          <div><b>Cars passing:</b> <span class="stat-val-green">${v.carsPerMin} veh/min</span></div>
+          <div><b>Queue:</b> <span class="stat-val-cyan">${v.queue} veh</span> <span class="stat-val-muted">(NS ${v.queueNS} · EW ${v.queueEW}; ${o.queue} under ${isSwarm ? 'static timer' : 'swarm'})</span></div>
+          <div><b>Signal:</b> <span style="color:${PHASE_COLOR[v.state]};font-weight:600">${v.phase}</span>${v.state === 'G' ? ` <span class="stat-val-muted">· ${v.greenElapsed}s</span>` : ''}</div>
+          <div><b>Green allocation:</b> ${isSwarm
+            ? `<span class="stat-val-green">dynamic NS ${lg('NS')} / EW ${lg('EW')}</span> <span class="stat-val-muted">vs static 30s / 30s</span>`
+            : '<span class="stat-val-muted">static 30s / 30s, every cycle</span>'}</div>
+          <div><b>Incoming platoon:</b> ${isSwarm
+            ? (inc ? `<span class="stat-val-cyan">${inc.size} veh arriving in ${inc.eta}s from ${esc(inc.from)}</span>` : '<span class="stat-val-muted">none announced</span>')
+            : '<span class="stat-val-muted">no inter-junction communication</span>'}</div>
+          <div><b>Fuel saved here:</b> <span class="stat-val-purple">${v.fuelSaved.toFixed(3)} L · ₹${rupees.toFixed(1)}</span> <span class="stat-val-muted">(measured vs static)</span></div>
+          ${isSwarm ? `<div><b>Pheromone τ:</b> <span class="stat-val-muted">NS ${v.tau.NS.toFixed(2)} · EW ${v.tau.EW.toFixed(2)}</span></div>` : ''}
+        </div>
+      </div>`;
+  }, [demo, rawJunctions, activeMode, otherMode, isSwarm, currentCity]);
+  tooltipRef.current = buildTooltip;
+
+  // Per-step marker refresh (in place, so CSS pulses keep running)
+  useEffect(() => {
+    markersRef.current.forEach((marker, i) => {
+      const el = marker.getElement();
+      if (!el || i >= demo.junctions.length) return;
+      const v = demo.junctionView(activeMode, i);
+      const color = PHASE_COLOR[v.state];
+      const wrap = el.querySelector('.gzb-marker-wrap');
+      wrap.classList.toggle('active', i === selectedIdx);
+      wrap.classList.toggle('compact', gridSize >= 9);
+      wrap.classList.toggle('em-lock', isSwarm && !!v.lock);
+      el.querySelector('.marker-pulse').style.background = color;
+      el.querySelector('.marker-core').style.borderColor = color;
+      el.querySelector('.marker-queue').textContent = v.queue;
+      el.querySelector('.marker-tag').classList.toggle('hide', !(gridSize === 3 || i === selectedIdx));
+      const inc = isSwarm && v.incoming[0] && v.incoming[0].size >= 3 ? v.incoming[0] : null;
+      const badge = el.querySelector('.marker-incoming');
+      badge.textContent = inc ? `▲${inc.size} · ${inc.eta}s` : '';
+      badge.classList.toggle('show', !!inc && gridSize < 9);
+      if (marker.isTooltipOpen()) marker.setTooltipContent(buildTooltip(i));
+    });
+  });
+
+  // Animated layer: vehicles on links, inter-agent packets and the ambulance (canvas over the map)
+  useEffect(() => {
+    let raf = 0;
+    const stepMs = 1000 / speed;
+    const draw = () => {
+      raf = requestAnimationFrame(draw);
+      const cv = fxCanvasRef.current;
+      const map = leafletMapRef.current;
+      if (!cv || !map) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = cv.clientWidth;
+      const h = cv.clientHeight;
+      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+        cv.width = Math.round(w * dpr);
+        cv.height = Math.round(h * dpr);
+      }
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      const nowMs = performance.now();
+      const frac = isPlaying ? Math.min(1, (nowMs - lastStepRef.current) / stepMs) : 0;
+      const P = demo.junctions.map(j => map.latLngToContainerPoint([j.lat, j.lon]));
+      const along = (a, b, f, side) => {
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        return { x: a.x + dx * f - (dy / len) * side, y: a.y + dy * f + (dx / len) * side, ux: dx / len, uy: dy / len };
+      };
+
+      if (showFlow) {
+        ctx.fillStyle = '#fbbf24';
+        demo.transitGroups(activeMode, frac).forEach(g => {
+          const p = along(P[g.from], P[g.to], g.frac, 5);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.2 + Math.min(4, Math.sqrt(g.count) * 1.1), 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      packetsRef.current = packetsRef.current.filter(p => nowMs < p.startMs + p.durMs);
+      if (showFlow && isSwarm) {
+        packetsRef.current.forEach(p => {
+          if (nowMs < p.startMs) return;
+          const t = (nowMs - p.startMs) / p.durMs;
+          const f = 1 - (1 - t) * (1 - t);
+          const em = p.kind === 'emergency';
+          const pos = along(P[p.from], P[p.to], f, em ? 0 : 5);
+          const trail = ctx.createLinearGradient(pos.x - pos.ux * 34, pos.y - pos.uy * 34, pos.x, pos.y);
+          trail.addColorStop(0, 'rgba(34,211,238,0)');
+          trail.addColorStop(1, em ? 'rgba(248,113,113,0.9)' : 'rgba(34,211,238,0.9)');
+          ctx.strokeStyle = trail;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(pos.x - pos.ux * 34, pos.y - pos.uy * 34);
+          ctx.lineTo(pos.x, pos.y);
+          ctx.stroke();
+          ctx.shadowColor = em ? '#ef4444' : '#22d3ee';
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = em ? (Math.floor(nowMs / 150) % 2 ? '#ffffff' : '#ef4444') : '#a5f3fc';
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, em ? 5.5 : 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          if (!em && p.size >= 3) {
+            ctx.font = '600 10px "JetBrains Mono", monospace';
+            ctx.fillStyle = '#cffafe';
+            ctx.fillText(`${p.size}`, pos.x + 7, pos.y - 6);
+          }
+        });
+      }
+
+      const amb = demo.ambulancePosition(activeMode, frac);
+      if (amb) {
+        const p = map.latLngToContainerPoint([amb.lat, amb.lon]);
+        const pulse = 11 + 4 * Math.sin(nowMs / 160);
+        ctx.strokeStyle = 'rgba(239,68,68,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = Math.floor(nowMs / 250) % 2 ? '#ef4444' : '#ffffff';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚑', p.x, p.y - 14);
+        if (amb.waiting) {
+          ctx.font = '700 10px "JetBrains Mono", monospace';
+          ctx.fillStyle = '#fca5a5';
+          ctx.fillText(`STOPPED AT RED · ${amb.delay}s`, p.x, p.y + 24);
+        }
+        ctx.textAlign = 'start';
+      }
+    };
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, [demo, activeMode, isSwarm, showFlow, isPlaying, speed]);
 
   // Dynamic Free OpenStreetMap Nominatim search for ANY location in the world
   const handleSearchLocation = async (e) => {
@@ -228,216 +510,57 @@ export default function GhaziabadLiveMap() {
       const data = await res.json();
       if (data && data[0]) {
         const place = data[0];
-        const newLat = parseFloat(place.lat);
-        const newLon = parseFloat(place.lon);
-        const custom = {
+        setCustomLocation({
           id: 'custom-' + Date.now(),
           name: place.display_name.split(',')[0],
-          region: place.display_name.split(',').slice(1, 3).join(','),
-          center: [newLat, newLon],
-          zoom: 14,
-          description: `Live Real-World Intersection Grid: ${place.display_name}`
-        };
-        setCustomLocation(custom);
-        if (leafletMapRef.current) {
-          leafletMapRef.current.flyTo([newLat, newLon], 14, { duration: 1.5 });
-        }
+          region: place.display_name.split(',').slice(1, 3).join(',').trim(),
+          center: [parseFloat(place.lat), parseFloat(place.lon)],
+          zoom: 13,
+          description: `Live Real-World Intersection Grid: ${place.display_name}`,
+        });
       }
     } catch (err) {
-      console.error('Location search failed:', err);
+      console.warn('Location search failed:', err);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // City options for dropdown
-  const cityDropdownOptions = useMemo(() => {
-    return SUPPORTED_CITIES.map(c => ({
-      value: c.id,
-      label: c.name,
-      sub: c.region,
-      badge: c.id.toUpperCase()
-    }));
-  }, []);
+  const cityDropdownOptions = useMemo(() => SUPPORTED_CITIES.map(c => ({
+    value: c.id,
+    label: c.name,
+    sub: c.region,
+    badge: c.id.toUpperCase(),
+  })), []);
 
   const gridDropdownOptions = useMemo(() => [
-    { value: '3', label: '3×3 Core Corridors', sub: `9 primary crossings · ≈${coverage.areaKm2.toFixed(0)} km² area`, badge: '9 SIGNALS' },
-    { value: '5', label: '5×5 City Grid', sub: `25 real intersections · ≈${(coverage.areaKm2 * 1.8).toFixed(0)} km² area`, badge: '25 SIGNALS' },
-    { value: '9', label: '9×9 Metro Grid', sub: `81 real intersections · ≈${(coverage.areaKm2 * 3.6).toFixed(0)} km² area`, badge: '81 SIGNALS' },
-  ], [coverage]);
+    { value: '3', label: '3×3 Core Corridors', sub: '9 primary crossings', badge: '9 SIGNALS' },
+    { value: '5', label: '5×5 City Grid', sub: '25 intersections', badge: '25 SIGNALS' },
+    { value: '9', label: '9×9 Metro Grid', sub: '81 intersections', badge: '81 SIGNALS' },
+  ], []);
 
-  // Leaflet Map Initialization
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const L = require('leaflet');
-
-    if (!leafletMapRef.current && mapContainerRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        center: currentCity.center,
-        zoom: currentCity.zoom,
-        zoomControl: true,
-        maxZoom: 18,
-      });
-      map.attributionControl.setPrefix(false);
-      leafletMapRef.current = map;
+  const triggerEmergency = () => {
+    const route = demo.triggerEmergency();
+    if (route) {
+      setEmRoute(route.slice());
+      setActiveMode(SWARM);
     }
+  };
 
-    const map = leafletMapRef.current;
-    if (!map) return;
+  // Live values for this render (re-rendered once per simulated second)
+  const fuel = demo.fuel();
+  const em = demo.emergency();
+  const emActive = demo.emergencyActive();
+  const sel = Math.min(selectedIdx, rawJunctions.length - 1);
+  const selJ = rawJunctions[sel];
+  const selV = demo.junctionView(activeMode, sel);
+  const messages = demo.meshes[SWARM].messages.slice(-150);
+  const queueTotal = demo.meshes[activeMode].queueTotal();
+  const queueOther = demo.meshes[otherMode].queueTotal();
 
-    // Clear old layers
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    polylinesRef.current.forEach(p => p.remove());
-    polylinesRef.current = [];
-    flowLinesRef.current.forEach(f => f.remove());
-    flowLinesRef.current = [];
-
-    // Draw Continuous Cars Flow lines along corridors
-    if (showGridOverlay) {
-      const isSwarm = activeMode === 'swarm';
-      edges.forEach(([i, k]) => {
-        const j1 = currentJunctions[i];
-        const j2 = currentJunctions[k];
-        if (!j1 || !j2) return;
-
-        // Base corridor road
-        const roadLine = L.polyline([[j1.lat, j1.lon], [j2.lat, j2.lon]], {
-          color: isSwarm ? '#0284c7' : '#475569',
-          weight: isSwarm ? 3.5 : 2,
-          opacity: isSwarm ? 0.6 : 0.4,
-        }).addTo(map);
-        polylinesRef.current.push(roadLine);
-
-        // Animated continuous flow pulse line
-        if (showFlowAnimation && isSwarm) {
-          const flowLine = L.polyline([[j1.lat, j1.lon], [j2.lat, j2.lon]], {
-            color: '#38bdf8',
-            weight: 3,
-            className: 'continuous-car-flow-line',
-            opacity: 0.95,
-          }).addTo(map);
-          flowLinesRef.current.push(flowLine);
-        }
-      });
-    }
-
-    // Add Interactive Signal Markers with Rich Hover Tooltip
-    const compact = gridSize >= 9;
-    currentJunctions.forEach(j => {
-      const isSelected = selectedJunction?.id === j.id;
-      const showTag = gridSize === 3 || isSelected;
-
-      const markerHtml = `
-        <div class="gzb-marker-wrap ${isSelected ? 'active' : ''} ${compact ? 'compact' : ''}">
-          <div class="marker-pulse" style="background: ${j.phaseColor};"></div>
-          <div class="marker-core" style="border-color: ${j.phaseColor};">
-            <span class="marker-queue">${j.liveQueue}</span>
-          </div>
-          ${showTag ? `<span class="marker-tag">${j.name.split('/')[0].split('·')[0].trim()}</span>` : ''}
-        </div>
-      `;
-
-      const customIcon = L.divIcon({
-        className: 'custom-leaflet-marker',
-        html: markerHtml,
-        iconSize: compact ? [24, 24] : [36, 36],
-        iconAnchor: compact ? [12, 12] : [18, 18],
-      });
-
-      const marker = L.marker([j.lat, j.lon], { icon: customIcon }).addTo(map);
-
-      // Rich Hover Card Tooltip (User requirement: Hovering shows full place name, cars passing, lanes, time saved, fuel, queue)
-      const tooltipHtml = `
-        <div class="signal-hover-card">
-          <div class="hover-title">${j.name}</div>
-          <div class="hover-place">📍 ${currentCity.name}, ${currentCity.region}</div>
-          <div class="hover-flow-status">
-            ${activeMode === 'swarm' ? '🟢 Continuous Green Wave Flow' : '🔴 Traditional Fixed Interval'}
-          </div>
-          <div class="hover-grid-stats">
-            <div><b>Cars Passing:</b> <span class="stat-val-green">${j.carsPerMin} veh/min</span></div>
-            <div><b>Total Lanes:</b> <span class="stat-val-cyan">${j.lanes || 6} Lanes</span></div>
-            <div><b>Time Saved:</b> <span class="stat-val-green">${activeMode === 'swarm' ? `${j.timeSavedSec}s / veh` : '0s (Base)'}</span></div>
-            <div><b>Fuel Saved:</b> <span class="stat-val-purple">${activeMode === 'swarm' ? `${j.fuelSavedPct}% (Zero Idling)` : '0%'}</span></div>
-            <div><b>Queue:</b> <span class="stat-val-green">${j.liveQueue} veh</span> <span class="stat-val-muted">(${j.baseQueue} traditional)</span></div>
-            <div><b>Signal Phase:</b> <span style="color: ${j.phaseColor}; font-weight: 600;">${j.phaseName}</span></div>
-          </div>
-        </div>
-      `;
-
-      marker.bindTooltip(tooltipHtml, {
-        direction: 'top',
-        className: 'rich-signal-tooltip',
-        offset: [0, -16],
-        opacity: 0.98
-      });
-
-      marker.on('click', () => {
-        setSelectedJunctionId(j.id);
-      });
-
-      markersRef.current.push(marker);
-    });
-  }, [currentJunctions, showGridOverlay, showFlowAnimation, activeMode, selectedJunction, gridSize, edges, currentCity]);
-
-  // Basemap tile layer switcher
   useEffect(() => {
-    const map = leafletMapRef.current;
-    if (!map) return;
-    const L = require('leaflet');
-    tileLayersRef.current.forEach(t => t.remove());
-    tileLayersRef.current = MAP_VIEWS[mapView].layers.map(({ url, ...opts }) =>
-      L.tileLayer(url, { maxZoom: 18, ...opts }).addTo(map)
-    );
-  }, [mapView]);
-
-  // Fly to new city when city or custom location changes
-  useEffect(() => {
-    const map = leafletMapRef.current;
-    if (!map || !currentCity) return;
-    const L = require('leaflet');
-    map.flyTo(currentCity.center, currentCity.zoom, { duration: 1.2 });
-    coverageLayerRef.current?.remove();
-    if (coverage.hull && coverage.hull.length > 2) {
-      coverageLayerRef.current = L.polygon(coverage.hull, {
-        color: '#38bdf8',
-        weight: 2,
-        dashArray: '8, 6',
-        fillColor: '#38bdf8',
-        fillOpacity: 0.08,
-        interactive: false,
-      }).addTo(map);
-    }
-  }, [currentCity, coverage]);
-
-  // Aggregate stats across current grid
-  const aggregates = useMemo(() => {
-    const totalQueue = currentJunctions.reduce((acc, j) => acc + j.liveQueue, 0);
-    const avgDelay = currentJunctions.reduce((acc, j) => acc + j.liveDelay, 0) / (currentJunctions.length || 1);
-    const baseTotalQueue = rawJunctions.reduce((acc, j) => acc + j.baseQueue, 0);
-    const baseAvgDelay = rawJunctions.reduce((acc, j) => acc + j.baseDelay, 0) / (rawJunctions.length || 1);
-
-    const delaySavedPct = Math.max(0, ((baseAvgDelay - avgDelay) / baseAvgDelay) * 100);
-    const queueSavedPct = Math.max(0, ((baseTotalQueue - totalQueue) / baseTotalQueue) * 100);
-
-    const scale = rawJunctions.length / 9;
-    const baseFuelMg = 85400000 * scale;
-    const swarmFuelMg = (activeMode === 'swarm' ? 58900000 : 85400000) * scale;
-    const baseCo2Mg = 265000000 * scale;
-    const swarmCo2Mg = (activeMode === 'swarm' ? 182000000 : 265000000) * scale;
-
-    return {
-      totalQueue,
-      avgDelay,
-      delaySavedPct: activeMode === 'swarm' ? delaySavedPct : 0,
-      queueSavedPct: activeMode === 'swarm' ? queueSavedPct : 0,
-      baseFuelMg,
-      swarmFuelMg,
-      baseCo2Mg,
-      swarmCo2Mg,
-    };
-  }, [currentJunctions, activeMode, rawJunctions]);
+    if (emRoute && em && em.swarm.done && em.fixed.done) setEmRoute(null);
+  }, [emRoute, em]);
 
   return (
     <div className="gzb-command-center" style={{ maxWidth: 1440, margin: '0 auto', padding: '16px 20px' }}>
@@ -445,19 +568,23 @@ export default function GhaziabadLiveMap() {
       <section className="panel gzb-header-panel" style={{ position: 'relative', zIndex: 50, marginBottom: 16 }}>
         <div className="toolbar" style={{ flexWrap: 'wrap', gap: 14, justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 340px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span className="badge live" style={{ background: '#10b981', color: '#022c22' }}>
-                ● {currentCity.name.toUpperCase()} LIVE CONTINUOUS TRAFFIC
+                ● {currentCity.name.toUpperCase()} LIVE AGENT MESH
               </span>
               <span className="status" style={{ fontSize: 11, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-                OpenStreetMap Real-World Corridors
+                {rawJunctions.length} autonomous JunctionAgents
               </span>
+              <button className="explainer-open-btn" onClick={() => setExplainerOpen(true)}>
+                <BookOpen size={14} /> How Swarm Intelligence Works
+              </button>
             </div>
             <h2 style={{ marginTop: 6, marginBottom: 4, fontSize: '1.5rem', color: '#f1f5f9' }}>
-              Real-Time Smart City Traffic Map & Continuous Vehicle Flow
+              Predictive green waves: junctions that talk before the traffic arrives
             </h2>
             <p className="muted small" style={{ margin: 0 }}>
-              Hover over any intersection to view live cars passing, total lanes, time saved, fuel waste eliminated, and continuous flow.
+              Cyan pulses are platoon alerts racing ahead of the vehicles (amber). Hover a signal for its live flow, incoming platoon countdown,
+              dynamic green time and fuel saved.
             </p>
           </div>
 
@@ -503,166 +630,106 @@ export default function GhaziabadLiveMap() {
         </div>
 
         {/* Free Dynamic Search for ANY Indian / Global Location */}
-        <form onSubmit={handleSearchLocation} style={{ marginTop: 14, display: 'flex', gap: 10 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
+        <form onSubmit={handleSearchLocation} className="gzb-search-row">
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: '#94a3b8' }} />
             <input
               type="text"
-              placeholder="Search any place in India (e.g. Pune, Connaught Place Delhi, Silk Board Bengaluru, Jaipur, Lucknow)..."
+              placeholder="Search any place (e.g. Pune, Connaught Place Delhi, Silk Board Bengaluru)…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '9px 12px 9px 36px',
-                borderRadius: 8,
-                background: 'rgba(15, 23, 42, 0.8)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: '#f8fafc',
-                fontSize: '0.88rem'
-              }}
+              className="gzb-search-input"
             />
           </div>
-          <button
-            type="submit"
-            disabled={isSearching}
-            style={{
-              padding: '9px 18px',
-              borderRadius: 8,
-              background: '#0284c7',
-              color: '#fff',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '0.88rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-          >
+          <button type="submit" disabled={isSearching} className="gzb-search-btn">
             <Navigation size={14} />
             {isSearching ? 'Locating…' : 'Locate Place'}
           </button>
         </form>
       </section>
 
-      {/* Main Map Container */}
-      <div style={{ position: 'relative', zIndex: 1, isolation: 'isolate', borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', height: 580, marginBottom: 16 }}>
-        <div ref={mapContainerRef} style={{ width: '100%', height: '100%', background: '#090e18' }} />
-
-        {/* Floating Top Controls Overlay */}
-        <div style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          zIndex: 1000,
-          background: 'rgba(15, 23, 42, 0.92)',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: 8,
-          padding: '8px 12px',
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          backdropFilter: 'blur(8px)'
-        }}>
-          <button
-            onClick={() => setActiveMode(m => m === 'swarm' ? 'baseline' : 'swarm')}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 6,
-              background: activeMode === 'swarm' ? '#10b981' : '#ef4444',
-              color: activeMode === 'swarm' ? '#022c22' : '#fef2f2',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6
-            }}
-          >
-            <Zap size={14} />
-            {activeMode === 'swarm' ? 'Swarm Intelligence ON' : 'Fixed Baseline Mode'}
+      {/* Comparison toggle, emergency trigger and simulation controls */}
+      <div className="map-control-bar">
+        <div className="mode-toggle" role="group" aria-label="Signal control mode">
+          <button className={isSwarm ? 'on swarm' : ''} onClick={() => setActiveMode(SWARM)} aria-pressed={isSwarm}>
+            <Zap size={14} /> Swarm Intelligence {isSwarm && <b>ON</b>}
           </button>
-
-          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={showFlowAnimation}
-              onChange={e => setShowFlowAnimation(e.target.checked)}
-            />
-            Continuous Cars Flow Pulse
-          </label>
-
-          <label style={{ fontSize: '0.8rem', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-            <input
-              type="checkbox"
-              checked={showGridOverlay}
-              onChange={e => setShowGridOverlay(e.target.checked)}
-            />
-            Corridor Links
-          </label>
+          <button className={!isSwarm ? 'on fixed' : ''} onClick={() => setActiveMode(FIXED)} aria-pressed={!isSwarm}>
+            <Timer size={14} /> Traditional Fixed Timer (Static 30s)
+          </button>
         </div>
 
-        {/* Floating Bottom Status Pill */}
-        <div style={{
-          position: 'absolute',
-          bottom: 16,
-          left: 16,
-          right: 16,
-          zIndex: 1000,
-          background: 'rgba(15, 23, 42, 0.94)',
-          border: '1px solid rgba(56, 189, 248, 0.3)',
-          borderRadius: 10,
-          padding: '12px 18px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 12,
-          backdropFilter: 'blur(10px)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#10b981', animation: 'markerPulseAnim 1.5s infinite' }} />
-            <div>
-              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#f8fafc' }}>
-                {selectedJunction ? `${selectedJunction.name} · ${currentCity.name}` : `${currentCity.name} Intersections`}
-              </div>
-              <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                {selectedJunction?.corridor} · {selectedJunction?.lanes || 6} Traffic Lanes
-              </div>
-            </div>
-          </div>
+        <button className="em-trigger" onClick={triggerEmergency} disabled={emActive}>
+          <Siren size={15} />
+          {emActive
+            ? `Ambulance corridor active · swarm delay ${em.swarm.delay_s}s · static ${em.fixed.delay_s}s`
+            : '🚑 Trigger Emergency Ambulance Corridor'}
+        </button>
 
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: '0.82rem' }}>
-            <div>
-              <span style={{ color: '#94a3b8' }}>Cars Passing: </span>
-              <b style={{ color: '#10b981' }}>{selectedJunction?.carsPerMin || 38} veh/min</b>
-            </div>
-            <div>
-              <span style={{ color: '#94a3b8' }}>Vehicles Queued: </span>
-              <b style={{ color: '#38bdf8' }}>{selectedJunction?.liveQueue} veh</b>
-            </div>
-            <div>
-              <span style={{ color: '#94a3b8' }}>Time Saved: </span>
-              <b style={{ color: '#10b981' }}>{selectedJunction?.timeSavedSec || 45}s / veh</b>
-            </div>
-            <div>
-              <span style={{ color: '#94a3b8' }}>Fuel Saved: </span>
-              <b style={{ color: '#a855f7' }}>{selectedJunction?.fuelSavedPct || 19.5}% (No Idling)</b>
-            </div>
-          </div>
+        <div className="sim-controls">
+          <button onClick={() => setIsPlaying(p => !p)} aria-label={isPlaying ? 'Pause simulation' : 'Play simulation'}>
+            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+          </button>
+          {SPEEDS.map(s => (
+            <button key={s} className={speed === s ? 'on' : ''} onClick={() => setSpeed(s)} aria-pressed={speed === s}>{s}×</button>
+          ))}
+          <span className="sim-clock">T+{demo.t}s</span>
+        </div>
+
+        <div className="map-toggles">
+          <label><input type="checkbox" checked={showFlow} onChange={e => setShowFlow(e.target.checked)} /> Packets &amp; vehicles</label>
+          <label><input type="checkbox" checked={showLinks} onChange={e => setShowLinks(e.target.checked)} /> Corridor links</label>
         </div>
       </div>
 
-      {/* Fuel Saved & Real-Time Impact Component */}
-      <FuelSavedCard
-        baselineFuelMg={aggregates.baseFuelMg}
-        swarmFuelMg={aggregates.swarmFuelMg}
-        baselineCo2Mg={aggregates.baseCo2Mg}
-        swarmCo2Mg={aggregates.swarmCo2Mg}
-        delayReductionPct={aggregates.delaySavedPct}
-        title={`Live Ecological & Fuel Telemetry: ${currentCity.name}`}
-      />
+      <div className="map-legend">
+        <span><i style={{ background: '#a5f3fc', boxShadow: '0 0 8px #22d3ee' }} /> platoon alert packet</span>
+        <span><i style={{ background: '#fbbf24' }} /> vehicles in transit</span>
+        <span><i style={{ background: '#10b981' }} /> green</span>
+        <span><i style={{ background: '#f59e0b' }} /> yellow</span>
+        <span><i style={{ background: '#f43f5e' }} /> red / all-red</span>
+        <span className="legend-q">network queue: <b style={{ color: isSwarm ? '#10b981' : '#f43f5e' }}>{queueTotal}</b> veh (other mode {queueOther})</span>
+      </div>
+
+      {/* Main Map Container */}
+      <div className="gzb-map-wrap">
+        <div ref={mapContainerRef} className="gzb-map-canvas" style={{ background: '#090e18' }} />
+        <canvas ref={fxCanvasRef} className="map-fx-canvas" aria-hidden="true" />
+
+        <SwarmTerminal messages={messages} selectedId={selJ?.id} mode={activeMode} />
+
+        {/* Floating Bottom Status Pill */}
+        {selJ && (
+          <div className="gzb-status-pill">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+              <div style={{ width: 10, height: 10, flex: '0 0 auto', borderRadius: '50%', background: PHASE_COLOR[selV.state] }} />
+              <div style={{ minWidth: 0 }}>
+                <div className="pill-title">{selJ.name} · {currentCity.name}</div>
+                <div className="pill-sub">
+                  {selV.phase}{selV.state === 'G' ? ` · ${selV.greenElapsed}s` : ''} · {isSwarm ? (DECISION_TEXT[selV.decision] || 'Observing') : 'static 30 s plan'}
+                </div>
+              </div>
+            </div>
+            <div className="pill-stats">
+              <div><span>Cars passing</span><b style={{ color: '#10b981' }}>{selV.carsPerMin} veh/min</b></div>
+              <div><span>Queued</span><b style={{ color: '#38bdf8' }}>{selV.queue} veh</b></div>
+              <div><span>Incoming</span><b style={{ color: '#22d3ee' }}>
+                {isSwarm ? (selV.incoming[0] ? `${selV.incoming[0].size} veh in ${selV.incoming[0].eta}s` : '—') : 'no comms'}
+              </b></div>
+              <div><span>Fuel saved here</span><b style={{ color: '#a855f7' }}>{selV.fuelSaved.toFixed(3)} L</b></div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <SwarmImpactPanel fuel={fuel} emergency={em} simSeconds={demo.t} cityName={currentCity.name} />
+
+      <p className="muted small mesh-footnote">
+        <Radio size={12} /> Same engine as <code>simulation/swarm/junction_mesh.py</code>, which the lab API serves at <code>/api/lab/swarm/mesh/*</code>. Both
+        implementations give identical results. Link travel times are compressed to 10–28 s so platoons stay visible on screen.
+      </p>
+
+      <SwarmExplainerModal open={explainerOpen} onClose={() => setExplainerOpen(false)} />
     </div>
   );
 }

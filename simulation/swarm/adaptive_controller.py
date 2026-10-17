@@ -106,6 +106,22 @@ class AdaptiveController:
                 self.green_wave = None
         return self.agents
 
+    # ------------------------------------------------------------------ neighbour channels
+    def send_platoon_alert(self, source: str, target_id: str, count: int, eta: float, now: float,
+                           target_phase: int | None = None):
+        """Explicit agent-to-agent message: `source` tells its neighbour `target_id` that `count` vehicles
+        arrive in ~`eta` s. Answered by the receiver's green-wave logic on its next step (safety-gated)."""
+        if self.green_wave is None:
+            return None
+        agent = self.agents.get(source)
+        if agent is None or target_id not in agent.neighbors:
+            raise ValueError(f"{target_id} is not a neighbour of {source}")
+        return self.green_wave.send_platoon_alert(source, target_id, count, eta, now=now, target_phase=target_phase)
+
+    def neighbor_channels(self) -> dict:
+        """(sender, receiver) -> {sent, lost, vehicles, last_sent_at} for every channel used so far."""
+        return {} if self.green_wave is None else dict(self.green_wave.channels)
+
     # ------------------------------------------------------------------ one decision tick
     def decide(self, now: float, tick: int, halting, occupancy, events: list) -> list[dict]:
         """Observe -> publish -> propose -> coordinate -> safety gate. Returns decision records
