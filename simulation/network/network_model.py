@@ -10,6 +10,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
 import xml.etree.ElementTree as ET
+from simulation.network.geo import parse_location
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,7 @@ class NetworkModel:
         self.neighbor_max_distance = float(neighbor_max_distance)
         self.tls = tls                  # id -> TrafficLight
         self.junction_tls = {j: t.id for t in tls.values() for j in t.junctions}
+        self.location = None            # parsed <location> of an OSM import (see simulation.network.geo), else None
         self._neighbors: dict[str, dict[str, float]] | None = None
         self._downstream: dict[tuple[str, int], tuple] = {}
         self.successors: dict[str, set[str]] = defaultdict(set)    # edge -> edges reachable via a connection
@@ -117,13 +119,15 @@ class NetworkModel:
                 lane_ids.append(lane.get("id"))
             length = max((lanes[l]["length"] for l in lane_ids), default=0.0)
             edges[eid] = {"from": e.get("from"), "to": e.get("to"), "function": e.get("function", ""),
-                          "length": length, "lanes": lane_ids}
+                          "length": length, "lanes": lane_ids, "name": e.get("name")}
         tls = {}
         for t in root.findall("tlLogic"):
             phases = [Phase(float(p.get("duration")), p.get("state")) for p in t.findall("phase")]
             # A TLS can have several programs; the first one in the file is what SUMO starts with.
             tls.setdefault(t.get("id"), TrafficLight(t.get("id"), t.get("programID"), t.get("type"), phases))
         model = cls(path, junctions, edges, lanes, tls, neighbor_max_distance)
+        loc = root.find("location")
+        model.location = parse_location(loc.attrib if loc is not None else None)
         for c in root.findall("connection"):
             frm, to = c.get("from"), c.get("to")
             if not frm.startswith(":") and not to.startswith(":"):

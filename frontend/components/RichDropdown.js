@@ -75,10 +75,8 @@ export default function RichDropdown({
           {Icon && <Icon size={16} className="trigger-icon" />}
           {selectedOption ? (
             <div className="selected-content">
+              {/* Badges are shown in the open list; the closed trigger keeps its width for the label */}
               <span className="selected-label">{getOptionLabel(selectedOption)}</span>
-              {getOptionBadge(selectedOption) && (
-                <span className="selected-badge">{getOptionBadge(selectedOption)}</span>
-              )}
             </div>
           ) : (
             <span className="trigger-placeholder">{placeholder}</span>

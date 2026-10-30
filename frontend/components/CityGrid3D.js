@@ -61,6 +61,27 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
   const [rot, setRot] = useState(0);
   const [cam, setCam] = useState({ id: 'iso', az: 45, el: 35.26 });
   const [hover, setHover] = useState(null);
+  const [hoverPos, setHoverPos] = useState(null);
+
+  const updateHover = (id, e) => {
+    setHover(id);
+    if (wrapRef.current && e?.currentTarget) {
+      const nodeRect = e.currentTarget.getBoundingClientRect();
+      const wrapRect = wrapRef.current.getBoundingClientRect();
+      setHoverPos({
+        x: nodeRect.left + nodeRect.width / 2 - wrapRect.left,
+        y: nodeRect.top - wrapRect.top,
+        bottomY: nodeRect.bottom - wrapRect.top,
+        boxW: wrapRect.width,
+        boxH: wrapRect.height,
+      });
+    }
+  };
+
+  const clearHover = () => {
+    setHover(null);
+    setHoverPos(null);
+  };
   const [showBuildings, setShowBuildings] = useState(true);
   const [showCars, setShowCars] = useState(true);
   const [showPillars, setShowPillars] = useState(true);
@@ -274,8 +295,9 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
     const handlers = {
       onClick: () => onSelect?.(id),
       onDoubleClick: () => onOpenIntersection?.(id),
-      onMouseEnter: () => setHover(id),
-      onMouseLeave: () => setHover(h => (h === id ? null : h)),
+      onMouseEnter: (e) => updateHover(id, e),
+      onMouseMove: (e) => updateHover(id, e),
+      onMouseLeave: clearHover,
       style: { cursor: 'pointer' },
     };
     tall.push({
@@ -405,6 +427,103 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
         {tall.map(x => x.el)}
         {labels}
       </svg>
+
+      {/* Floating HTML Hover Popup Card */}
+      {hover && hoverPos && (() => {
+        const j = junctions?.[hover];
+        const lv = j?.level || 'no_data';
+        const phase = j?.phase;
+        const isGreen = phase != null && phase % 2 === 0;
+        const isYellow = phase != null && phase % 2 !== 0;
+        const occ = j?.occupancy;
+        const occPct = occ != null ? occ * 100 : null;
+        const q = j?.queue || 0;
+        const isOnRoute = route?.includes(hover);
+        const isBelow = hoverPos.y < 165;
+        const cardHalfWidth = 145;
+        const clampedX = Math.max(cardHalfWidth + 12, Math.min(hoverPos.boxW - cardHalfWidth - 12, hoverPos.x));
+        const topPos = isBelow ? hoverPos.bottomY + 12 : hoverPos.y - 12;
+        const levelColor = LEVEL_COLORS[lv] || LEVEL_COLORS.no_data;
+
+        return (
+          <div
+            className="hm-floating-card"
+            style={{
+              left: `${clampedX}px`,
+              top: `${topPos}px`,
+              transform: isBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            }}
+          >
+            <div className="hm-fc-head">
+              <div className="hm-fc-id-badge">
+                <span className="hm-fc-id">{hover}</span>
+                <span className="hm-fc-label">3D Junction Node</span>
+              </div>
+              {phase != null ? (
+                <span className={`hm-fc-phase-pill ${isGreen ? 'green' : isYellow ? 'yellow' : 'nodata'}`}>
+                  <span className={`hm-fc-dot ${isGreen ? 'green' : 'yellow'}`} />
+                  Phase {phase} · {isGreen ? 'GREEN' : 'YELLOW'}
+                </span>
+              ) : (
+                <span className="hm-fc-phase-pill nodata">
+                  Phase —
+                </span>
+              )}
+            </div>
+
+            <div className="hm-fc-grid">
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Congestion</span>
+                <span className="hm-fc-stat-val" style={{ color: levelColor }}>
+                  {lv.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Halting Queue</span>
+                <span className="hm-fc-stat-val" style={{ color: q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399' }}>
+                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8' }}>veh</span>
+                </span>
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Occupancy</span>
+                <span className="hm-fc-stat-val">
+                  {occPct != null ? `${fmt(occPct, 1)}%` : '—'}
+                </span>
+                {occPct != null && (
+                  <div className="hm-fc-progress-wrap">
+                    <div
+                      className="hm-fc-progress-bar"
+                      style={{
+                        width: `${Math.min(100, Math.max(2, occPct))}%`,
+                        background: occPct > 60 ? '#ef4444' : occPct > 30 ? '#f59e0b' : '#10b981',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Lanes</span>
+                <span className="hm-fc-stat-val">
+                  {j?.lanes ? `${j.lanes} lanes` : '4 lanes'}
+                </span>
+              </div>
+            </div>
+
+            {isOnRoute && (
+              <div className="hm-fc-emergency">
+                <span>🚑 Priority Emergency Corridor Active</span>
+              </div>
+            )}
+
+            <div className="hm-fc-hint">
+              <span>💡 Double-click for street-level intersection view</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Controls */}
       <div className="city3d-controls">

@@ -138,7 +138,8 @@ def ensure_network(preset_name: str, root: Path = PROJECT_ROOT, config_path: str
         preset["osm_file"] = str(source_path)
         preset["osm_sha256"] = sha256_file(source_path)
 
-    out = root / GENERATED_DIR / preset_name
+    # A user-supplied extract gets its own folder, so jobs on different areas never share a build
+    out = root / GENERATED_DIR / (preset_name if osm_file is None else f"{preset_name}_{preset['osm_sha256'][:10]}")
     longest = out / "osmNetconvertPedestrians.typ.xml"
     if os.name == "nt" and len(str(longest.resolve())) > 250:
         raise NetworkValidationError(f"output path is too long for SUMO on Windows ({len(str(longest.resolve()))} > 250 "

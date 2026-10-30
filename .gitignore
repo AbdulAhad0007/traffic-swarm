@@ -30,6 +30,8 @@ simulation/scenarios/grid3x3/build.net.xml
 
 # Generated SUMO networks (rebuilt from simulation/config/networks.json)
 simulation/scenarios/generated/
+# Real-world areas downloaded from OpenStreetMap through the lab (regenerate from the lab UI)
+simulation/scenarios/osm/user/
 
 # Lab jobs and evaluation-matrix raw runs (large; regenerate with the documented commands)
 experiments/lab/jobs/

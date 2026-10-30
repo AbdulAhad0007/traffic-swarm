@@ -38,6 +38,11 @@ Network size and timing are configured in `simulation/config/networks.json` (no 
 
 See `docs/IMPLEMENTATION_STATUS.md` for what Phase 1 changed, measured results and known limitations.
 
+### Real-world traffic signals (OpenStreetMap)
+- **Signal Map** (`/ghaziabad`): pick a city, search any place or scan the visible map. Nodes are only placed where OSM has mapped `highway=traffic_signals`; signal heads of one crossing are merged into one junction, and junctions are linked only by the real road between them. Quick-pick cities open instantly from snapshots in `frontend/public/osm/` (refresh with `node frontend/scripts/osm-snapshot.mjs`); other areas are fetched from all public Overpass mirrors at once and cached in the browser for a week.
+- **Live Lab real-world areas** (`/live`): add a place (≤ 4 km²); the lab downloads its OSM extract into `simulation/scenarios/osm/user/` and jobs on it run SUMO on the real roads and lights. The world map then draws every traffic light at its real coordinates (the net's UTM projection is inverted in `simulation/network/geo.py`). Synthetic grids are labelled as having no real location.
+- OSM has no live traffic counts: queues, platoons and fuel are simulated on modelled demand. Data © OpenStreetMap contributors, ODbL 1.0.
+
 ### Evaluation matrix and statistics
 Method: `docs/RESEARCH_METHODOLOGY.md`. Run `python -m experiments.tools.evaluate_matrix run --stage core --workers 4` (stages: core, ablation, emergency, mixed; check progress with `status`), then `python -m experiments.tools.analyze_evaluation`. The report goes to `experiments/reports/<matrix>/`. Results are preliminary until the matrix status shows every planned cell completed.
 

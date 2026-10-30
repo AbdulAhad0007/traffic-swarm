@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { lab, fmt, KPIS, colorOf } from '@/lib/api';
 import Heatmap from '@/components/Heatmap';
 import FuelSavedCard from '@/components/FuelSavedCard';
-import { useLabOptions, useJobs, JobForm, JobList, useLive, EmergencyPanel, routeInfo } from '@/components/LiveLab';
+import { useLabOptions, useJobs, useAreas, JobForm, JobList, useLive, EmergencyPanel, routeInfo } from '@/components/LiveLab';
 
 // Frame of a replay at simulated time t (latest frame at or before t) -> {tls: {...}}.
 function frameAt(rp, t) {
@@ -16,7 +16,7 @@ function frameAt(rp, t) {
 }
 
 export default function BeforeAfter() {
-  const [opt, err] = useLabOptions(); const [jobs, reload] = useJobs();
+  const [opt, err] = useLabOptions(); const [jobs, reload] = useJobs(); const [areas] = useAreas();
   const [sel, setSel] = useState(null);
 
   useEffect(() => {
@@ -37,10 +37,10 @@ export default function BeforeAfter() {
   const ctrls = job?.spec?.controllers || [];
   return <>
     <section className="panel"><h2>Before / after demonstration</h2>
-      {err ? <div className="error">{err}</div> : <JobForm opt={opt} kind="demo" onCreated={j => { setSel(j.id); reload() }} />}
+      {err ? <div className="error">{err}</div> : <JobForm opt={opt} kind="demo" areas={areas} onCreated={j => { setSel(j.id); reload() }} />}
       <p className="muted small">The scenario is prepared once; each controller then runs in its own SUMO process (own TraCI port, output directory and log). Live views show each run&#39;s own simulated time; replay of a completed demo is aligned by simulated time.</p>
     </section>
-    <section className="panel"><h2>Demo jobs</h2><JobList jobs={jobs} selected={sel} onSelect={setSel} filter={j => j.spec.kind === 'demo'} /></section>
+    <section className="panel"><h2>Demo jobs</h2><JobList jobs={jobs} selected={sel} onSelect={setSel} filter={j => j.spec.kind === 'demo'} areas={areas} /></section>
     {job && live && <section className="panel">
       <div className="toolbar"><h2>{ctrls[0]} → {ctrls[1]}</h2>
         {done && <div className="tabs"><button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Final live state</button><button className={mode === 'replay' ? 'on' : ''} onClick={() => setMode('replay')}>Replay</button></div>}</div>
@@ -60,7 +60,9 @@ export default function BeforeAfter() {
               swarmFuelMg={result.controllers?.[ctrls[1]]?.fuel_mg}
               baselineCo2Mg={result.controllers?.[ctrls[0]]?.co2_mg}
               swarmCo2Mg={result.controllers?.[ctrls[1]]?.co2_mg}
-              title={`${ctrls[1]} vs ${ctrls[0]} Fuel & Emissions Benefit`}
+              baselineLabel={ctrls[0]}
+              compareLabel={ctrls[1]}
+              title={`Fuel & emissions · ${ctrls[1]} vs ${ctrls[0]}`}
             />
           </div>
           <KpiTable result={result} />

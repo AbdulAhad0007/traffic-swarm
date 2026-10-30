@@ -45,7 +45,7 @@ class SpecError(ValueError):
     pass
 
 
-def validate_spec(raw: dict) -> dict:
+def validate_spec(raw: dict, root: Path = PROJECT_ROOT) -> dict:
     """Return a normalised spec or raise SpecError. Only allow-listed values are accepted."""
     from experiments.tools.run_experiment import SCENARIOS, VARIANTS
     from simulation.network.presets import preset_names, resolve_preset
@@ -58,8 +58,17 @@ def validate_spec(raw: dict) -> dict:
     if network not in preset_names():
         raise SpecError(f"unknown network preset '{network}'")
     preset = resolve_preset(network)
-    if preset["type"] == "osm" and not preset.get("osm_file"):
-        raise SpecError("OSM presets without a committed extract (e.g. osm_user) can only be run from the CLI")
+    osm_area = raw.get("osm_area")
+    if osm_area is not None:
+        from experiments.lab.osm_areas import AreaStore, AreaError
+        if network != "osm_user":
+            raise SpecError("osm_area can only be used with the osm_user network")
+        try:
+            AreaStore(root).osm_file(osm_area)
+        except AreaError as exc:
+            raise SpecError(str(exc))
+    elif preset["type"] == "osm" and not preset.get("osm_file"):
+        raise SpecError("osm_user needs an osm_area (add a real-world area in the lab first)")
     scenario = raw.get("scenario", "normal")
     if scenario not in SCENARIOS:
         raise SpecError(f"unknown scenario '{scenario}'")
@@ -83,8 +92,11 @@ def validate_spec(raw: dict) -> dict:
     rf = raw.get("realtime_factor")
     if rf is not None and (not isinstance(rf, (int, float)) or not 1 <= rf <= 500):
         raise SpecError("realtime_factor must be null or in [1, 500] simulated seconds per wall second")
-    return {"kind": kind, "network": network, "scenario": scenario, "seed": seed, "controllers": controllers,
-            "ambulances": ambulances, "max_time": float(max_time), "realtime_factor": rf}
+    out = {"kind": kind, "network": network, "scenario": scenario, "seed": seed, "controllers": controllers,
+           "ambulances": ambulances, "max_time": float(max_time), "realtime_factor": rf}
+    if osm_area is not None:
+        out["osm_area"] = osm_area
+    return out
 
 
 class JobManager:
@@ -150,7 +162,7 @@ class JobManager:
 
     # ------------------------------------------------------------------ lifecycle
     def submit(self, raw: dict) -> dict:
-        spec = validate_spec(raw)
+        spec = validate_spec(raw, self.root)
         with self.lock:
             if self.running_count() >= self.max_running:
                 raise SpecError(f"{self.max_running} jobs are already running; stop one first")

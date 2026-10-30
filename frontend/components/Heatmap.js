@@ -48,10 +48,39 @@ export default function Heatmap({
   network,
 }) {
   const [viewMode, setViewMode] = useState('heatmap'); // 'heatmap' | 'city3d' | 'world' | 'digital_twin'
+  // A network imported from OpenStreetMap opens on the world map, where its lights sit at their real positions
+  const openedGeoFor = useRef(null);
+  useEffect(() => {
+    if (layout?.geo && openedGeoFor.current !== network) {
+      openedGeoFor.current = network;
+      setViewMode('world');
+    }
+  }, [layout?.geo, network]);
   const boxRef = useRef(null);
   const [isFull, toggleFull] = useFullscreen(boxRef);
   const [selected, setSelected] = useState(null);
   const [hover, setHover] = useState(null);
+  const [hoverPos, setHoverPos] = useState(null);
+
+  const updateHover = (id, e) => {
+    setHover(id);
+    if (boxRef.current && e?.currentTarget) {
+      const nodeRect = e.currentTarget.getBoundingClientRect();
+      const boxRect = boxRef.current.getBoundingClientRect();
+      setHoverPos({
+        x: nodeRect.left + nodeRect.width / 2 - boxRect.left,
+        y: nodeRect.top - boxRect.top,
+        bottomY: nodeRect.bottom - boxRect.top,
+        boxW: boxRect.width,
+        boxH: boxRect.height,
+      });
+    }
+  };
+
+  const clearHover = () => {
+    setHover(null);
+    setHoverPos(null);
+  };
   const [showLights, setShowLights] = useState(true);
   const [showCars, setShowCars] = useState(true);
   const [radiantGlow, setRadiantGlow] = useState(true);
@@ -546,8 +575,9 @@ export default function Heatmap({
             <g
               key={n.id}
               onClick={() => setSelected(n.id)}
-              onMouseEnter={() => setHover(n.id)}
-              onMouseLeave={() => setHover(null)}
+              onMouseEnter={(e) => updateHover(n.id, e)}
+              onMouseMove={(e) => updateHover(n.id, e)}
+              onMouseLeave={clearHover}
               style={{ cursor: 'pointer' }}
             >
               {/* Invisible Hitbox */}
@@ -591,25 +621,104 @@ export default function Heatmap({
           );
         })}
 
-        {/* Hover Tooltip */}
-        {hv && geo.pos[hover] && (
-          <g
-            pointerEvents="none"
-            transform={`translate(${Math.min(geo.pos[hover][0] + 16, geo.W - 240)}, ${Math.max(geo.pos[hover][1] - 70, 8)})`}
+              </svg>
+
+      {/* Floating HTML Hover Popup Card */}
+      {hover && hoverPos && (() => {
+        const j = junctions?.[hover];
+        const lv = j?.level || 'no_data';
+        const phase = j?.phase;
+        const isGreen = phase != null && phase % 2 === 0;
+        const isYellow = phase != null && phase % 2 !== 0;
+        const occ = j?.occupancy;
+        const occPct = occ != null ? occ * 100 : null;
+        const q = j?.queue || 0;
+        const isOnRoute = route?.includes(hover);
+        const isBelow = hoverPos.y < 165;
+        const cardHalfWidth = 145;
+        const clampedX = Math.max(cardHalfWidth + 12, Math.min(hoverPos.boxW - cardHalfWidth - 12, hoverPos.x));
+        const topPos = isBelow ? hoverPos.bottomY + 12 : hoverPos.y - 12;
+        const levelColor = LEVEL_COLORS[lv] || LEVEL_COLORS.no_data;
+
+        return (
+          <div
+            className="hm-floating-card"
+            style={{
+              left: `${clampedX}px`,
+              top: `${topPos}px`,
+              transform: isBelow ? 'translate(-50%, 0)' : 'translate(-50%, -100%)',
+            }}
           >
-            <rect width={230} height={64} rx={10} className="hm-tip" />
-            <text x={12} y={22} className="hm-tip-t">
-              {hover} {hv.phase != null ? `· Phase ${hv.phase} (${hv.phase % 2 === 0 ? '🟢 Green' : '🟡 Yellow'})` : ''}
-            </text>
-            <text x={12} y={42} className="hm-tip-s">
-              Congestion: {hv.level} · Queue: {fmt(hv.queue, 0)} veh
-            </text>
-            <text x={12} y={56} className="hm-tip-s">
-              Lane Occupancy: {hv.occupancy == null ? '—' : fmt(hv.occupancy * 100, 1) + '%'} · {hv.lanes} lanes
-            </text>
-          </g>
-        )}
-      </svg>
+            <div className="hm-fc-head">
+              <div className="hm-fc-id-badge">
+                <span className="hm-fc-id">{hover}</span>
+                <span className="hm-fc-label">Junction Node</span>
+              </div>
+              {phase != null ? (
+                <span className={`hm-fc-phase-pill ${isGreen ? 'green' : isYellow ? 'yellow' : 'nodata'}`}>
+                  <span className={`hm-fc-dot ${isGreen ? 'green' : 'yellow'}`} />
+                  Phase {phase} · {isGreen ? 'GREEN' : 'YELLOW'}
+                </span>
+              ) : (
+                <span className="hm-fc-phase-pill nodata">
+                  Phase —
+                </span>
+              )}
+            </div>
+
+            <div className="hm-fc-grid">
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Congestion</span>
+                <span className="hm-fc-stat-val" style={{ color: levelColor }}>
+                  {lv.replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Halting Queue</span>
+                <span className="hm-fc-stat-val" style={{ color: q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399' }}>
+                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8' }}>veh</span>
+                </span>
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Occupancy</span>
+                <span className="hm-fc-stat-val">
+                  {occPct != null ? `${fmt(occPct, 1)}%` : '—'}
+                </span>
+                {occPct != null && (
+                  <div className="hm-fc-progress-wrap">
+                    <div
+                      className="hm-fc-progress-bar"
+                      style={{
+                        width: `${Math.min(100, Math.max(2, occPct))}%`,
+                        background: occPct > 60 ? '#ef4444' : occPct > 30 ? '#f59e0b' : '#10b981',
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="hm-fc-stat">
+                <span className="hm-fc-stat-lbl">Lanes</span>
+                <span className="hm-fc-stat-val">
+                  {j?.lanes ? `${j.lanes} lanes` : '4 lanes'}
+                </span>
+              </div>
+            </div>
+
+            {isOnRoute && (
+              <div className="hm-fc-emergency">
+                <span>🚑 Priority Emergency Corridor Active</span>
+              </div>
+            )}
+
+            <div className="hm-fc-hint">
+              <span>💡 Click node to inspect details</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Legend & Telemetry Summary Ribbon */}
       <div className="legend">

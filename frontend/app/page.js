@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import {
   Activity,
   Play,
@@ -59,12 +58,13 @@ const RICH_SCENARIOS = [
   },
 ];
 
+// [key, label, unit, lower is better]
 const METRICS = [
-  ['average_time_loss_s', 'Delay / timeLoss (s)'],
-  ['max_queue', 'Max queue (veh)'],
-  ['average_travel_time_s', 'Travel time (s)'],
-  ['average_stops', 'Avg stops'],
-  ['throughput', 'Throughput (veh)'],
+  ['average_time_loss_s', 'Delay per vehicle', 's', true],
+  ['average_travel_time_s', 'Travel time per vehicle', 's', true],
+  ['max_queue', 'Max queue', 'veh', true],
+  ['average_stops', 'Stops per vehicle', '', true],
+  ['throughput', 'Vehicles served', 'veh', false],
 ];
 
 const GRID_ARCHITECTURES = [
@@ -106,11 +106,11 @@ const GRID_ARCHITECTURES = [
   },
   {
     id: 'osm_ghaziabad',
-    title: 'Ghaziabad NCR Live Map',
-    scale: '9 Major Regional Junctions',
-    description: 'Real-world OpenStreetMap telemetry of Ghaziabad, UP (Mohan Nagar, Raj Nagar Extension, NH-9, Hapur Chungi) under live swarm optimization with zero collision guarantees.',
-    highlight: 'Real OpenStreetMap geometry',
-    badge: 'LIVE NCR MAP',
+    title: 'Real-World Signal Map',
+    scale: 'Any city · real OSM traffic lights',
+    description: 'Every node is a traffic light mapped in OpenStreetMap, linked only by the real roads between signals. Pick any place, watch the swarm mesh run on it, or send the area to the SUMO lab to simulate it.',
+    highlight: 'Nodes only where real signals stand',
+    badge: 'OSM',
     color: '#f43f5e',
   },
 ];
@@ -189,15 +189,13 @@ export default function ExperimentsPage() {
   const chartData = useMemo(() => {
     if (!selectedComparison?.comparisons?.swarm) return [];
     const cmp = selectedComparison.comparisons.swarm;
-    return METRICS.map(([key, label]) => {
+    return METRICS.map(([key, label, unit, lowerBetter]) => {
       const x = cmp[key];
-      return x?.baseline != null && x?.swarm != null
-        ? {
-            name: label,
-            Baseline: Number(x.baseline.toFixed?.(2) ?? x.baseline),
-            Swarm: Number(x.swarm.toFixed?.(2) ?? x.swarm),
-          }
-        : null;
+      if (x?.baseline == null || x?.swarm == null) return null;
+      const base = Number(x.baseline);
+      const swarm = Number(x.swarm);
+      const change = base ? ((swarm - base) / Math.abs(base)) * 100 : 0;
+      return { key, label, unit, lowerBetter, base, swarm, change, better: lowerBetter ? swarm < base : swarm > base };
     }).filter(Boolean);
   }, [selectedComparison]);
 
@@ -244,6 +242,25 @@ export default function ExperimentsPage() {
 
   return (
     <>
+      {/* Overview Module Main Header */}
+      <header className="app-main-header">
+        <div>
+          <span className="eyebrow">
+            <span className="dot-pulse" />
+            AI SWARM INTELLIGENCE CORE · SUMO MICROSCOPIC SIMULATOR
+          </span>
+          <h1>Traffic Swarm Intelligence Lab</h1>
+          <p>Hybrid PSO + ACO Optimization · Multi-Agent Blackboard Coordination · Microscopic Real-Time SUMO Simulation</p>
+        </div>
+        <div className="header-meta-box">
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <span className="badge live">● SIMULATION READY</span>
+            <span className="status" style={{ fontSize: 11 }}>v1.3.2-eval</span>
+          </div>
+          <span className="muted" style={{ fontSize: 12 }}>3×3 · 5×5 · 9×9 grids · any OpenStreetMap area</span>
+        </div>
+      </header>
+
       {/* Top Telemetry Cards */}
       <section className="grid telemetry-top-grid">
         <div className="card">
@@ -359,8 +376,8 @@ export default function ExperimentsPage() {
               <Play size={15} color="#38bdf8" />
               {running ? 'Launching...' : 'Run Live Simulation'}
             </button>
-            <button onClick={load} title="Refresh Telemetry">
-              <RefreshCw size={15} />
+            <button onClick={load} title="Refresh telemetry" aria-label="Refresh telemetry">
+              <RefreshCw size={15} /> Refresh
             </button>
           </div>
         </div>
@@ -379,12 +396,12 @@ export default function ExperimentsPage() {
           <Link href="/ghaziabad" className="mini feature-card-highlight" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b style={{ color: '#f43f5e', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <MapPin size={16} /> Ghaziabad Live Map
+                <MapPin size={16} /> Real-World Signal Map
               </b>
-              <span className="badge live" style={{ fontSize: 10 }}>NEW NCR</span>
+              <span className="badge live" style={{ fontSize: 10 }}>OSM</span>
             </div>
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
-              Interactive OpenStreetMap digital twin across Mohan Nagar, Raj Nagar Ext & NH-9 with live swarm optimization.
+              Any city: real OpenStreetMap traffic signals, linked by real roads, with live swarm signal control.
             </p>
           </Link>
 
@@ -505,25 +522,25 @@ export default function ExperimentsPage() {
           </div>
 
           {chartData.length > 0 ? (
-            <div className="chart">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData} margin={{ top: 15, right: 20, left: 0, bottom: 5 }}>
-                  <CartesianGrid stroke="#1e293b" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} />
-                  <YAxis stroke="#94a3b8" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      background: '#090d16',
-                      border: '1px solid rgba(56, 189, 248, 0.3)',
-                      borderRadius: 12,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="Baseline" fill="#38bdf8" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="Swarm" fill="#10b981" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            // Each metric on its own scale: one shared axis hid every metric except throughput
+            <div className="kpi-compare">
+              {chartData.map(m => {
+                const max = Math.max(m.base, m.swarm, 1e-9);
+                const num = v => `${v >= 100 ? v.toFixed(0) : v.toFixed(2)}${m.unit ? ` ${m.unit}` : ''}`;
+                return (
+                  <div key={m.key} className="kpi-compare-row">
+                    <div className="kpi-compare-head">
+                      <span>{m.label}</span>
+                      <b className={m.better ? 'good' : m.change === 0 ? '' : 'bad'}>
+                        {m.change > 0 ? '+' : ''}{m.change.toFixed(1)}%
+                      </b>
+                      <small>{m.lowerBetter ? 'lower is better' : 'higher is better'}</small>
+                    </div>
+                    <div className="kpi-compare-bar"><span>Fixed-time</span><div><i style={{ width: `${(m.base / max) * 100}%`, background: '#38bdf8' }} /></div><b>{num(m.base)}</b></div>
+                    <div className="kpi-compare-bar"><span>Swarm</span><div><i style={{ width: `${(m.swarm / max) * 100}%`, background: '#10b981' }} /></div><b>{num(m.swarm)}</b></div>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="muted">Loading comparison data...</p>
@@ -536,7 +553,6 @@ export default function ExperimentsPage() {
               swarmFuelMg={kpiHighlights?.fuelSwarm}
               baselineCo2Mg={kpiHighlights?.co2Base}
               swarmCo2Mg={kpiHighlights?.co2Swarm}
-              delayReductionPct={kpiHighlights?.delayImp || 23.5}
             />
           </div>
 

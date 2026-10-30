@@ -116,14 +116,15 @@ export function buildLinks(junctions, edges) {
 }
 
 export function heroIndex(junctions) {
+  const flagged = junctions.findIndex(j => j.hero);
+  if (flagged >= 0) return flagged;
   const i = junctions.findIndex(j => /hapur/i.test(j.name));
   if (i >= 0) return i;
   return junctions.reduce((best, j, k) => (j.lon > junctions[best].lon ? k : best), 0);
 }
 
+// Shortest hop path from `start` to the geometrically farthest junction reachable by road
 export function emergencyRoute(junctions, links, start) {
-  let far = 0;
-  junctions.forEach((j, i) => { if (distM(junctions[start], j) > distM(junctions[start], junctions[far])) far = i; });
   const prev = new Map([[start, null]]);
   const frontier = [start];
   while (frontier.length) {
@@ -132,7 +133,8 @@ export function emergencyRoute(junctions, links, start) {
       if (l.from === u && !prev.has(l.to)) { prev.set(l.to, u); frontier.push(l.to); }
     });
   }
-  if (!prev.has(far)) return [start];
+  let far = start;
+  junctions.forEach((j, i) => { if (prev.has(i) && distM(junctions[start], j) > distM(junctions[start], junctions[far])) far = i; });
   const path = [];
   for (let u = far; u !== null; u = prev.get(u)) path.push(u);
   return path.reverse();

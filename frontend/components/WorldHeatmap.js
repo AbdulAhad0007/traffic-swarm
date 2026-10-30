@@ -7,7 +7,8 @@ import { useFullscreen } from '@/lib/usePanZoom';
 import { Globe2, MapPin, Maximize2, Minimize2, Crosshair } from 'lucide-react';
 
 // Real world map (OpenStreetMap / Esri tiles) with the simulated network's congestion drawn as a
-// heatmap. The layout is in SUMO metres, so it is anchored at a chosen place on Earth.
+// heatmap. A network imported from OpenStreetMap is geo-referenced: every traffic light is drawn at
+// its real coordinates. A synthetic grid has no real location, so it is drawn to scale at a chosen place.
 
 const CITIES = [
   ['Bengaluru · MG Road', 12.974, 77.608],
@@ -53,9 +54,35 @@ function defaultAnchor(network) {
   return { lat: CITIES[0][1], lon: CITIES[0][2], name: CITIES[0][0] };
 }
 
-function tipHtml(id, j) {
+const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function tipHtml(node, j) {
   const s = sev(j);
-  return `<b>${id}</b> · ${SEV_NAME[s]}<br/>Queue: ${fmt(j?.queue, 0)} veh<br/>Occupancy: ${j?.occupancy == null ? '—' : fmt(j.occupancy * 100, 1) + '%'}<br/>Phase: ${j?.phase ?? '—'}`;
+  const real = node.lat != null
+    ? `<div class="world-tip-real">${node.streets?.length ? `<div style="font-weight:700;color:#f8fafc;font-size:13px;margin-bottom:2px;">${esc(node.streets.join(' × '))}</div>` : ''}`
+      + `<span style="color:#94a3b8;font-size:10.5px;">📍 Real Signal Head · ${node.lat.toFixed(5)}, ${node.lon.toFixed(5)}</span>`
+      + `${node.osm_nodes?.length ? `<div style="color:#64748b;font-size:10px;font-family:monospace;margin-top:2px;">OSM #${esc(node.osm_nodes.slice(0, 3).join(', '))}</div>` : ''}</div>`
+    : '';
+  const q = j?.queue || 0;
+  const occ = j?.occupancy;
+  const ph = j?.phase;
+  const isGreen = ph != null && ph % 2 === 0;
+  const phasePill = ph != null
+    ? `<span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:${isGreen ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'};color:${isGreen ? '#34d399' : '#fbbf24'};border:1px solid ${isGreen ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)'};">Phase ${ph} (${isGreen ? 'GREEN' : 'YELLOW'})</span>`
+    : '';
+
+  return `<div style="min-width:220px;">
+    ${real}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1);">
+      <span style="font-family:monospace;font-weight:800;color:#38bdf8;font-size:15px;">${esc(node.id)}</span>
+      <span style="font-size:11px;font-weight:700;color:${HEAT[s]};">${SEV_NAME[s]}</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11.5px;color:#cbd5e1;">
+      <div><span style="font-size:10px;text-transform:uppercase;color:#94a3b8;display:block;">Queue</span><b style="color:${q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399'};">${fmt(q, 0)} veh</b></div>
+      <div><span style="font-size:10px;text-transform:uppercase;color:#94a3b8;display:block;">Occupancy</span><b>${occ == null ? '—' : fmt(occ * 100, 1) + '%'}</b></div>
+    </div>
+    ${phasePill ? `<div style="margin-top:8px;">${phasePill}</div>` : ''}
+  </div>`;
 }
 
 export default function WorldHeatmap({ layout, junctions, route = [], network, selected, onSelect, height = 560 }) {
@@ -75,6 +102,7 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
   const [isFull, toggleFull] = useFullscreen(wrapRef);
 
   onSelectRef.current = onSelect;
+  const isGeo = !!(layout?.geo && layout.nodes?.some(n => n.lat != null));
   useEffect(() => { setAnchor(defaultAnchor(network)); }, [network]);
   useEffect(() => { placing.current = placeMode; }, [placeMode]);
 
@@ -136,7 +164,8 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
     return () => ro.disconnect();
   }, [ready]);
 
-  // Project SUMO metres to lat/lon around the anchor.
+  // Real coordinates for a geo-referenced network, otherwise SUMO metres placed around the anchor.
+  const nodeLatLng = n => (isGeo ? (n.lat != null ? [n.lat, n.lon] : null) : (n.x != null ? toLatLng(n.x, n.y) : null));
   const toLatLng = (x, y) => {
     const b = layout.bounds;
     const cx = (b.min_x + b.max_x) / 2, cy = (b.min_y + b.max_y) / 2;
@@ -147,7 +176,13 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
 
   const fit = () => {
     const map = mapRef.current;
-    if (!map || !layout?.bounds || !anchor) return;
+    if (!map || !layout?.bounds) return;
+    if (isGeo) {
+      const pts = layout.nodes.filter(n => n.lat != null).map(n => [n.lat, n.lon]);
+      if (pts.length) map.flyToBounds(LRef.current.latLngBounds(pts).pad(0.15), { duration: 1.6, maxZoom: 17 });
+      return;
+    }
+    if (!anchor) return;
     const b = layout.bounds;
     const m = 120;
     map.flyToBounds([toLatLng(b.min_x - m, b.min_y - m), toLatLng(b.max_x + m, b.max_y + m)], { duration: 1.6 });
@@ -156,11 +191,14 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
   // Build the network's map objects when the geometry or anchor changes, then fly to it.
   useEffect(() => {
     const L = LRef.current, map = mapRef.current;
-    if (!ready || !L || !map || !layout?.bounds || !anchor) return;
+    if (!ready || !L || !map || !layout?.bounds || (!isGeo && !anchor)) return;
     drawn.current?.group.remove();
     const group = L.layerGroup().addTo(map);
     const pos = {};
-    for (const n of layout.nodes) if (n.x != null) pos[n.id] = toLatLng(n.x, n.y);
+    for (const n of layout.nodes) {
+      const p = nodeLatLng(n);
+      if (p) pos[n.id] = p;
+    }
     const byId = Object.fromEntries(layout.nodes.map(n => [n.id, n]));
     const lens = layout.links.filter(([a, c]) => pos[a] && pos[c])
       .map(([a, c]) => Math.hypot(byId[a].x - byId[c].x, byId[a].y - byId[c].y)).sort((x, y) => x - y);
@@ -176,21 +214,22 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
       const marker = L.circleMarker(pos[n.id], { pane: 'nodes', fillOpacity: 1 }).addTo(group);
       marker.bindTooltip('', { direction: 'top', offset: [0, -6], className: 'world-tip' });
       marker.on('click', () => onSelectRef.current?.(n.id));
-      return { id: n.id, rings, marker };
+      return { id: n.id, node: n, rings, marker };
     });
-    const beacon = L.marker([anchor.lat, anchor.lon], { pane: 'nodes', icon: L.divIcon({ className: '', html: '<div class="world-beacon"><span></span></div>', iconSize: [22, 22], iconAnchor: [11, 11] }) })
+    // A synthetic grid gets a beacon at its anchor; a real network needs none
+    const beacon = isGeo ? null : L.marker([anchor.lat, anchor.lon], { pane: 'nodes', icon: L.divIcon({ className: '', html: '<div class="world-beacon"><span></span></div>', iconSize: [22, 22], iconAnchor: [11, 11] }) })
       .bindTooltip('', { className: 'world-tip' })
       .addTo(group);
-    beacon.on('click', fit);
+    beacon?.on('click', fit);
     const routeGroup = L.layerGroup().addTo(group);
     drawn.current = { group, links, nodes, beacon, routeGroup, pos, Lm };
 
-    const key = `${anchor.lat},${anchor.lon},${layoutKey}`;
+    const key = isGeo ? `geo,${layoutKey}` : `${anchor.lat},${anchor.lon},${layoutKey}`;
     if (fittedFor.current !== key) {
       fittedFor.current = key;
       fit();
     }
-  }, [ready, layoutKey, anchor]);
+  }, [ready, layoutKey, anchor, isGeo]);
 
   // Telemetry updates restyle the existing objects, so open tooltips and the view are not disturbed.
   useEffect(() => {
@@ -214,11 +253,13 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
       const isSel = selected === n.id;
       n.marker.setStyle({ radius: isSel ? 8 : 5.5, color: isSel ? '#ffffff' : '#0b1220', weight: isSel ? 2.5 : 1.5, fillColor: HEAT[s] });
       n.marker.setRadius(isSel ? 8 : 5.5);
-      n.marker.setTooltipContent(tipHtml(n.id, j));
+      n.marker.setTooltipContent(tipHtml(n.node, j));
     }
-    const el = d.beacon.getElement()?.querySelector('.world-beacon');
-    if (el) el.style.setProperty('--c', HEAT[worst]);
-    d.beacon.setTooltipContent(`<b>Simulated network</b><br/>${anchor?.name || ''}<br/>${d.nodes.length} junctions · total queue ${Math.round(totalQ)} veh`);
+    if (d.beacon) {
+      const el = d.beacon.getElement()?.querySelector('.world-beacon');
+      if (el) el.style.setProperty('--c', HEAT[worst]);
+      d.beacon.setTooltipContent(`<b>Synthetic network</b><br/>${esc(anchor?.name || '')}<br/>${d.nodes.length} junctions · total queue ${Math.round(totalQ)} veh`);
+    }
 
     d.routeGroup.clearLayers();
     const L = LRef.current;
@@ -226,7 +267,7 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
       const p = d.pos[route[i - 1]], q = d.pos[route[i]];
       if (p && q) L.polyline([p, q], { pane: 'roads', color: '#38bdf8', weight: 6, dashArray: '10 8', opacity: 0.95, interactive: false }).addTo(d.routeGroup);
     }
-  }, [ready, layoutKey, anchor, junctions, selected, route]);
+  }, [ready, layoutKey, anchor, junctions, selected, route, isGeo]);
 
   const pickCity = e => {
     const c = CITIES.find(x => x[0] === e.target.value);
@@ -239,13 +280,21 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
   return (
     <div ref={wrapRef} className={'world-map' + (isFull ? ' is-full' : '')}>
       <div className="world-bar">
-        <select value={CITIES.some(c => c[0] === anchor?.name) ? anchor.name : ''} onChange={pickCity} title="Place the simulated network in this city">
-          <option value="" disabled>{anchor?.name || 'Choose a city'}</option>
-          {CITIES.map(c => <option key={c[0]} value={c[0]}>{c[0]}</option>)}
-        </select>
-        <button type="button" className={'small ' + (placeMode ? 'on' : '')} onClick={() => setPlaceMode(x => !x)} title="Click anywhere on the map to place the network there">
-          <MapPin size={13} /> {placeMode ? 'Click on map…' : 'Place anywhere'}
-        </button>
+        {isGeo ? (
+          <span className="world-geo-badge" title="Positions come from the OpenStreetMap import of this network">
+            <MapPin size={13} /> {layout.nodes.length} real traffic lights · OpenStreetMap positions
+          </span>
+        ) : (
+          <>
+            <select value={CITIES.some(c => c[0] === anchor?.name) ? anchor.name : ''} onChange={pickCity} title="Place the synthetic grid in this city">
+              <option value="" disabled>{anchor?.name || 'Choose a city'}</option>
+              {CITIES.map(c => <option key={c[0]} value={c[0]}>{c[0]}</option>)}
+            </select>
+            <button type="button" className={'small ' + (placeMode ? 'on' : '')} onClick={() => setPlaceMode(x => !x)} title="Click anywhere on the map to place the grid there">
+              <MapPin size={13} /> {placeMode ? 'Click on map…' : 'Place anywhere'}
+            </button>
+          </>
+        )}
         <button type="button" className="small" onClick={fit} title="Fly to the network"><Crosshair size={13} /> Fly to network</button>
         <button type="button" className="small" onClick={() => mapRef.current?.flyTo([20, 30], 2, { duration: 1.4 })} title="Whole world">
           <Globe2 size={13} /> World
@@ -260,9 +309,17 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
         </button>
       </div>
       <div ref={mapEl} className={'world-canvas' + (base === 'dark' ? ' world-dark' : '')} style={{ height: isFull ? undefined : height, cursor: placeMode ? 'crosshair' : undefined }} />
-      <p className="muted small" style={{ margin: '8px 2px 0' }}>
-        Network geometry is the simulated layout placed at the chosen location (to scale, in metres); colours are live simulation congestion, not real-world traffic.
-      </p>
+      {isGeo ? (
+        <p className="muted small" style={{ margin: '8px 2px 0' }}>
+          Every node is a traffic light from OpenStreetMap at its real position (© OpenStreetMap contributors, ODbL). Colours are the live
+          SUMO simulation&apos;s congestion on those real roads, not measured real-world traffic.
+        </p>
+      ) : (
+        <p className="world-synthetic-note">
+          This is a <b>synthetic grid</b>, so it has no real-world location and is only drawn to scale at the chosen place.
+          To simulate real traffic lights, start a job on a <b>Real-world area</b> network.
+        </p>
+      )}
     </div>
   );
 }

@@ -23,13 +23,13 @@ import {
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Overview & Benchmark', icon: Activity, tag: 'CORE' },
-  { href: '/ghaziabad', label: 'Live City Traffic Map', icon: MapPin, tag: 'MAP' },
-  { href: '/live', label: 'Live Lab & Heatmap', icon: Radio, tag: 'LIVE' },
-  { href: '/demo', label: 'Before / After Replay', icon: GitCompare, tag: 'DUAL' },
-  { href: '/controllers', label: 'Controller Comparison', icon: SlidersHorizontal, tag: 'EVAL' },
-  { href: '/prediction', label: 'Congestion Prediction', icon: TrendingUp, tag: 'AI' },
-  { href: '/mixed', label: 'Indian Mixed Traffic', icon: Layers, tag: 'OSM' },
+  { href: '/', label: 'Overview', icon: Activity, tag: 'CORE' },
+  { href: '/ghaziabad', label: 'Signal Map', icon: MapPin, tag: 'OSM' },
+  { href: '/live', label: 'Live Lab', icon: Radio, tag: 'LIVE' },
+  { href: '/demo', label: 'Before / After', icon: GitCompare, tag: 'DUAL' },
+  { href: '/controllers', label: 'Controllers', icon: SlidersHorizontal, tag: 'EVAL' },
+  { href: '/prediction', label: 'Prediction', icon: TrendingUp, tag: 'AI' },
+  { href: '/mixed', label: 'Mixed Traffic', icon: Layers, tag: 'MIX' },
 ];
 
 export default function Sidebar() {
@@ -191,7 +191,7 @@ export default function Sidebar() {
             </div>
             {!isCollapsed && (
               <>
-                <span className="nav-label">How Swarm Intelligence Works</span>
+                <span className="nav-label">How It Works</span>
                 <span className="nav-tag">VIVA</span>
               </>
             )}

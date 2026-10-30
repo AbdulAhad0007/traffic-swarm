@@ -14,10 +14,12 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from experiments.lab.jobs import JobManager, SpecError, PROJECT_ROOT
+from experiments.lab.osm_areas import AreaStore, AreaError
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 ROOT = Path(os.environ.get("TSI_LAB_ROOT", PROJECT_ROOT)).resolve()
 manager = JobManager(ROOT, max_running=int(os.environ.get("TSI_LAB_MAX_RUNNING", "2")))
+areas = AreaStore(ROOT)
 RUN_ID = re.compile(r"^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+){0,4}$")
 NAME = re.compile(r"^[A-Za-z0-9_.-]{1,80}$")
 
@@ -94,6 +96,20 @@ def options():
     return {"presets": presets, "scenarios": list(SCENARIOS),
             "controllers": {k: {"kind": v[0], "emergency_priority": v[2], "overrides": v[3]} for k, v in VARIANTS.items()},
             "live": load_live_config()}
+
+
+@app.get("/api/lab/osm-areas")
+def osm_areas():
+    return areas.list()
+
+
+@app.post("/api/lab/osm-areas", status_code=202)
+def osm_area_create(body: dict):
+    """Download a real-world area (OSM extract, at most 4 km^2) in the background; poll the list for its status."""
+    try:
+        return areas.create(body.get("name"), body.get("bbox"))
+    except AreaError as exc:
+        raise HTTPException(400, str(exc))
 
 
 @app.post("/api/lab/jobs", status_code=201)

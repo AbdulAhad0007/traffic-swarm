@@ -1,76 +1,81 @@
 'use client';
 
 import React from 'react';
-import { Fuel, Leaf, IndianRupee, Clock, TrendingDown, Sparkles } from 'lucide-react';
+import { Fuel, Leaf, IndianRupee, Gauge, TrendingDown, TrendingUp, Hourglass } from 'lucide-react';
 import { fmt } from '@/lib/api';
 
+// Gasoline density ~ 0.74 kg/L (740,000 mg/L)
+const DENSITY_MG_PER_LITER = 740000;
+// Standard Indian Metro Fuel Price (Delhi-NCR ~ ₹96.72/L)
+const INR_PER_LITER = 96.72;
+
 /**
- * FuelSavedCard: Computes and displays real-time fuel, emissions, and cost savings
- * achieved by Traffic Swarm Intelligence optimization vs. fixed-time baseline.
+ * FuelSavedCard: fuel, CO₂ and cost difference between two measured SUMO runs on identical demand.
+ * Only measured values are shown: without both fuel totals the card says the result is pending, and
+ * when the compared controller burns more fuel than the reference the card says so.
  *
- * @param {Object} props
- * @param {number} props.baselineFuelMg - Raw fuel consumption in mg (Fixed baseline)
- * @param {number} props.swarmFuelMg - Raw fuel consumption in mg (Swarm optimization)
- * @param {number} props.baselineCo2Mg - Raw CO2 emissions in mg
- * @param {number} props.swarmCo2Mg - Raw CO2 emissions in mg
- * @param {number} props.delayReductionPct - Optional fallback percentage if raw mg is not yet available
- * @param {string} props.title - Optional card title
- * @param {boolean} props.compact - Compact mode for small cards
+ * @param {number} props.baselineFuelMg - fuel of the reference controller (mg, SUMO emission model)
+ * @param {number} props.swarmFuelMg - fuel of the compared controller (mg)
+ * @param {number} props.baselineCo2Mg - CO₂ of the reference controller (mg)
+ * @param {number} props.swarmCo2Mg - CO₂ of the compared controller (mg)
+ * @param {string} props.baselineLabel - name of the reference controller
+ * @param {string} props.compareLabel - name of the compared controller
+ * @param {string} props.pendingText - shown while the measured totals are not available
  */
 export default function FuelSavedCard({
   baselineFuelMg,
   swarmFuelMg,
   baselineCo2Mg,
   swarmCo2Mg,
-  delayReductionPct = 18.5,
+  baselineLabel = 'Fixed-time',
+  compareLabel = 'Swarm',
   title = 'Eco & Energy Savings via Swarm Intelligence',
+  pendingText = 'Measured fuel and CO₂ appear once both runs have finished.',
   compact = false,
 }) {
-  // Gasoline density ~ 0.74 kg/L (740,000 mg/L)
-  const DENSITY_MG_PER_LITER = 740000;
-  // Standard Indian Metro Fuel Price (Delhi-NCR ~ ₹96.72/L)
-  const INR_PER_LITER = 96.72;
+  const measured = baselineFuelMg != null && swarmFuelMg != null && baselineFuelMg > 0;
 
-  let fuelSavedMg = 0;
-  let fuelSavedPct = 0;
-  let co2SavedKg = 0;
-  let co2SavedPct = 0;
-  let litersSaved = 0;
-  let inrSaved = 0;
-
-  if (baselineFuelMg != null && swarmFuelMg != null && baselineFuelMg > 0) {
-    fuelSavedMg = Math.max(0, baselineFuelMg - swarmFuelMg);
-    fuelSavedPct = (fuelSavedMg / baselineFuelMg) * 100;
-    litersSaved = fuelSavedMg / DENSITY_MG_PER_LITER;
-    inrSaved = litersSaved * INR_PER_LITER;
-
-    if (baselineCo2Mg != null && swarmCo2Mg != null && baselineCo2Mg > 0) {
-      const co2DiffMg = Math.max(0, baselineCo2Mg - swarmCo2Mg);
-      co2SavedKg = co2DiffMg / 1e6;
-      co2SavedPct = (co2DiffMg / baselineCo2Mg) * 100;
-    } else {
-      co2SavedKg = litersSaved * 2.31; // ~2.31 kg CO2 per liter burned
-      co2SavedPct = fuelSavedPct;
-    }
-  } else {
-    // Dynamic estimation from delay reduction
-    fuelSavedPct = Math.max(5.0, Number(delayReductionPct) * 0.48);
-    litersSaved = (fuelSavedPct / 100) * 18.4;
-    inrSaved = litersSaved * INR_PER_LITER;
-    co2SavedKg = litersSaved * 2.31;
-    co2SavedPct = fuelSavedPct;
+  if (!measured) {
+    return compact ? (
+      <div className="fuel-saved-compact"><div className="fuel-header"><Fuel size={16} color="#64748b" /><b>Fuel:</b><span className="muted">pending</span></div></div>
+    ) : (
+      <div className="fuel-saved-card pending">
+        <div className="fuel-card-header">
+          <div className="fuel-title-group">
+            <div className="fuel-icon-wrap"><Hourglass size={20} color="#64748b" /></div>
+            <div>
+              <h4 className="fuel-card-title">{title}</h4>
+              <p className="fuel-card-sub">{pendingText}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // Positive = the compared controller used less than the reference
+  const fuelDiffMg = baselineFuelMg - swarmFuelMg;
+  const fuelPct = (fuelDiffMg / baselineFuelMg) * 100;
+  const liters = fuelDiffMg / DENSITY_MG_PER_LITER;
+  const inr = liters * INR_PER_LITER;
+  const hasCo2 = baselineCo2Mg != null && swarmCo2Mg != null && baselineCo2Mg > 0;
+  const co2Kg = hasCo2 ? (baselineCo2Mg - swarmCo2Mg) / 1e6 : liters * 2.31; // ~2.31 kg CO₂ per litre burned
+  const co2Pct = hasCo2 ? ((baselineCo2Mg - swarmCo2Mg) / baselineCo2Mg) * 100 : fuelPct;
+  const saves = fuelDiffMg >= 0;
+  const Trend = saves ? TrendingDown : TrendingUp;
+  const tone = saves ? '#10b981' : '#f43f5e';
+  const burnPct = (swarmFuelMg / baselineFuelMg) * 100;
 
   if (compact) {
     return (
       <div className="fuel-saved-compact">
         <div className="fuel-header">
-          <Fuel size={16} color="#10b981" />
-          <b>Fuel Saved:</b>
-          <span className="fuel-badge">
-            -{fmt(fuelSavedPct, 1)}% ({fmt(litersSaved, 2)} L)
+          <Fuel size={16} color={tone} />
+          <b>{saves ? 'Fuel saved:' : 'Extra fuel:'}</b>
+          <span className="fuel-badge" style={saves ? undefined : { color: tone }}>
+            {saves ? '-' : '+'}{fmt(Math.abs(fuelPct), 1)}% ({fmt(Math.abs(liters), 2)} L)
           </span>
-          <span className="inr-saved">≈ ₹{fmt(inrSaved, 0)} saved</span>
+          <span className="inr-saved">≈ ₹{fmt(Math.abs(inr), 0)} {saves ? 'saved' : 'extra'}</span>
         </div>
       </div>
     );
@@ -81,100 +86,84 @@ export default function FuelSavedCard({
       <div className="fuel-card-header">
         <div className="fuel-title-group">
           <div className="fuel-icon-wrap">
-            <Fuel size={20} color="#10b981" />
+            <Fuel size={20} color={tone} />
           </div>
           <div>
             <h4 className="fuel-card-title">
               {title}
-              <span className="live-eco-pill">
-                <Sparkles size={12} />
-                REAL-TIME TELEMETRY
-              </span>
+              <span className="live-eco-pill">MEASURED · SUMO</span>
             </h4>
             <p className="fuel-card-sub">
-              Smoother green-wave phase transitions eliminate idling stops and aggressive accelerations.
+              {compareLabel} vs {baselineLabel} on identical vehicles, from SUMO&apos;s emission model.
+              {!saves && ` In this run ${compareLabel} burned more fuel than ${baselineLabel}.`}
             </p>
           </div>
         </div>
 
         <div className="fuel-primary-stat">
-          <span className="fuel-stat-label">FUEL REDUCTION</span>
-          <div className="fuel-stat-value">
-            <TrendingDown size={22} color="#10b981" />
-            <span>{fmt(fuelSavedPct, 1)}%</span>
+          <span className="fuel-stat-label">{saves ? 'FUEL REDUCTION' : 'FUEL INCREASE'}</span>
+          <div className="fuel-stat-value" style={{ color: tone }}>
+            <Trend size={22} color={tone} />
+            <span>{fmt(Math.abs(fuelPct), 1)}%</span>
           </div>
         </div>
       </div>
 
       <div className="fuel-metrics-grid">
-        {/* Metric 1: Liters Saved */}
         <div className="fuel-metric-box">
           <div className="metric-box-top">
-            <Fuel size={16} color="#10b981" />
-            <span>FUEL CONSERVED</span>
+            <Fuel size={16} color={tone} />
+            <span>{saves ? 'FUEL SAVED' : 'EXTRA FUEL'}</span>
           </div>
-          <div className="metric-box-num text-emerald">
-            {fmt(litersSaved, 2)} <span className="unit">Liters</span>
+          <div className="metric-box-num" style={{ color: tone }}>
+            {fmt(Math.abs(liters), 2)} <span className="unit">Liters</span>
           </div>
-          <span className="metric-box-footer">
-            Saved from eliminated intersection queue idling
-          </span>
+          <span className="metric-box-footer">Whole network, whole run</span>
         </div>
 
-        {/* Metric 2: CO2 Avoided */}
         <div className="fuel-metric-box">
           <div className="metric-box-top">
             <Leaf size={16} color="#38bdf8" />
-            <span>CO₂ PREVENTED</span>
+            <span>{co2Kg >= 0 ? 'CO₂ PREVENTED' : 'EXTRA CO₂'}</span>
           </div>
           <div className="metric-box-num text-cyan">
-            {fmt(co2SavedKg, 2)} <span className="unit">kg CO₂</span>
+            {fmt(Math.abs(co2Kg), 2)} <span className="unit">kg CO₂</span>
           </div>
           <span className="metric-box-footer">
-            -{fmt(co2SavedPct, 1)}% greenhouse emissions cut
+            {co2Pct >= 0 ? '-' : '+'}{fmt(Math.abs(co2Pct), 1)}% {hasCo2 ? 'measured' : 'estimated from fuel'}
           </span>
         </div>
 
-        {/* Metric 3: INR Savings */}
         <div className="fuel-metric-box">
           <div className="metric-box-top">
             <IndianRupee size={16} color="#f59e0b" />
-            <span>COST SAVED (NCR)</span>
+            <span>{saves ? 'COST SAVED' : 'EXTRA COST'}</span>
           </div>
           <div className="metric-box-num text-amber">
-            ₹{fmt(inrSaved, 0)} <span className="unit">INR</span>
+            ₹{fmt(Math.abs(inr), 0)} <span className="unit">INR</span>
           </div>
-          <span className="metric-box-footer">
-            At standard ₹96.72/L regional fuel cost
-          </span>
+          <span className="metric-box-footer">At ₹{INR_PER_LITER}/L (Delhi-NCR petrol)</span>
         </div>
 
-        {/* Metric 4: Idling Time Saved */}
         <div className="fuel-metric-box">
           <div className="metric-box-top">
-            <Clock size={16} color="#a78bfa" />
-            <span>ZERO COLLISIONS</span>
+            <Gauge size={16} color="#a78bfa" />
+            <span>FUEL BURNT</span>
           </div>
           <div className="metric-box-num text-purple">
-            0 <span className="unit">Crashes</span>
+            {fmt(swarmFuelMg / DENSITY_MG_PER_LITER, 1)} <span className="unit">L vs {fmt(baselineFuelMg / DENSITY_MG_PER_LITER, 1)} L</span>
           </div>
-          <span className="metric-box-footer">
-            100% hard safety gated yellow/all-red phases
-          </span>
+          <span className="metric-box-footer">{compareLabel} vs {baselineLabel}</span>
         </div>
       </div>
 
-      {/* Visual Comparison Bar */}
       <div className="fuel-comparison-bar">
         <div className="comparison-bar-labels">
-          <span>Fixed Baseline: <b>100%</b> Fuel Burn</span>
-          <span className="text-emerald">Swarm Optimized: <b>{fmt(100 - fuelSavedPct, 1)}%</b> Fuel Burn</span>
+          <span>{baselineLabel}: <b>100%</b> fuel burn</span>
+          <span style={{ color: tone }}>{compareLabel}: <b>{fmt(burnPct, 1)}%</b> fuel burn</span>
         </div>
         <div className="comparison-track">
-          <div
-            className="comparison-fill"
-            style={{ width: `${Math.max(20, Math.min(100, 100 - fuelSavedPct))}%` }}
-          />
+          <div className="comparison-fill" style={{ width: `${Math.max(5, Math.min(100, burnPct))}%`, background: saves ? undefined : tone }} />
         </div>
       </div>
     </div>

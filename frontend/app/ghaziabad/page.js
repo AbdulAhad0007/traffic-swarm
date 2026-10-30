@@ -1,10 +1,10 @@
-import GhaziabadLiveMap from '@/components/GhaziabadLiveMap';
+import OsmSignalMap from '@/components/OsmSignalMap';
 
 export const metadata = {
-  title: 'Ghaziabad Live Digital Twin — Traffic Swarm Intelligence',
-  description: 'Real-time interactive OpenStreetMap traffic monitoring and Swarm PSO+ACO optimization across Ghaziabad, UP (Mohan Nagar, Raj Nagar Extension, NH-9).',
+  title: 'Real-World Signal Map — Traffic Swarm Intelligence',
+  description: 'Traffic signals for any place in the world, read live from OpenStreetMap, linked by real roads and controlled by the swarm JunctionAgent mesh.',
 };
 
-export default function GhaziabadPage() {
-  return <GhaziabadLiveMap />;
+export default function SignalMapPage() {
+  return <OsmSignalMap />;
 }

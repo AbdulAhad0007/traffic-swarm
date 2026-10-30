@@ -191,14 +191,16 @@ def grid_topology(n: int = 3) -> tuple[list, list]:
 
 def hero_index(junctions: list) -> int:
     for i, j in enumerate(junctions):
+        if j.get("hero"):
+            return i
+    for i, j in enumerate(junctions):
         if "hapur" in j["name"].lower():
             return i
     return max(range(len(junctions)), key=lambda i: junctions[i]["lon"])
 
 
 def emergency_route(junctions: list, links: list, start: int) -> list:
-    """Shortest hop path from `start` to the geometrically farthest junction."""
-    far = max(range(len(junctions)), key=lambda i: _dist_m(junctions[start], junctions[i]))
+    """Shortest hop path from `start` to the geometrically farthest junction reachable by road."""
     prev, frontier = {start: None}, deque([start])
     while frontier:
         u = frontier.popleft()
@@ -206,8 +208,10 @@ def emergency_route(junctions: list, links: list, start: int) -> list:
             if l["from"] == u and l["to"] not in prev:
                 prev[l["to"]] = u
                 frontier.append(l["to"])
-    if far not in prev:
-        return [start]
+    far = start
+    for i in range(len(junctions)):
+        if i in prev and _dist_m(junctions[start], junctions[i]) > _dist_m(junctions[start], junctions[far]):
+            far = i
     path, u = [], far
     while u is not None:
         path.append(u)

@@ -41,20 +41,24 @@ def main() -> int:
         p.error("invalid part")
     d = a.job_dir.resolve()
     job = json.loads((d / "job.json").read_text(encoding="utf-8"))
-    spec = validate_spec(job["spec"])
     root = Path(job.get("root") or PROJECT_ROOT)
+    spec = validate_spec(job["spec"], root)
     if d.parent != (root / "experiments" / "lab" / "jobs").resolve():
         p.error("job directory is not inside the job root")
     stop = d / "STOP"
     run_dir = d / "run"
+    osm_file = None
+    if spec.get("osm_area"):
+        from experiments.lab.osm_areas import AreaStore
+        osm_file = AreaStore(root).osm_file(spec["osm_area"])
     try:
         if a.part == "prepare":
-            info, cfg, route, meta, _ = prepare(spec["scenario"], spec["seed"], root, spec["network"],
+            info, cfg, route, meta, _ = prepare(spec["scenario"], spec["seed"], root, spec["network"], osm_file=osm_file,
                                                 ambulances=spec["ambulances"] or None, run_dir=run_dir)
             out = {"sumocfg": str(cfg), "routes": str(route), "scenario_definition": meta,
                    "controller_settings": info["preset"]["controller"], "network": info["meta"].get("preset")}
         elif a.part == "all":
-            out = run(spec["scenario"], spec["seed"], root, max_time=spec["max_time"], network=spec["network"],
+            out = run(spec["scenario"], spec["seed"], root, max_time=spec["max_time"], network=spec["network"], osm_file=osm_file,
                       controllers=spec["controllers"], ambulances=spec["ambulances"] or None, run_dir=run_dir,
                       live=True, stop_file=stop, realtime_factor=spec["realtime_factor"])
         else:

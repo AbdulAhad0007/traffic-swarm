@@ -22,23 +22,6 @@ export default function RootLayout({ children }) {
           <Sidebar />
           <div className="main-content-area">
             <main>
-              <header className="app-main-header">
-                <div>
-                  <span className="eyebrow">
-                    <span className="dot-pulse" />
-                    AI SWARM INTELLIGENCE CORE · SUMO MICROSCOPIC SIMULATOR
-                  </span>
-                  <h1>Traffic Swarm Intelligence Lab</h1>
-                  <p>Hybrid PSO + ACO Optimization · Multi-Agent Blackboard Coordination · Microscopic Real-Time SUMO Simulation</p>
-                </div>
-                <div className="header-meta-box">
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <span className="badge live">● SIMULATION READY</span>
-                    <span className="status" style={{ fontSize: 11 }}>v1.3.2-eval</span>
-                  </div>
-                  <span className="muted" style={{ fontSize: 12 }}>3×3 · 5×5 · 9×9 Grids & Bengaluru OSM</span>
-                </div>
-              </header>
               {children}
             </main>
           </div>

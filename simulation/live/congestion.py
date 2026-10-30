@@ -55,19 +55,35 @@ def tls_incoming_lanes(model) -> dict[str, list[str]]:
 
 
 def network_layout(model) -> dict:
-    """Junction positions (SUMO network coordinates, metres) and neighbor links for drawing."""
+    """Junction positions (SUMO network coordinates, metres) and neighbor links for drawing.
+
+    For a network imported from OpenStreetMap every node also carries its real lat/lon (inverted from
+    the net's UTM projection), the OSM node ids it was built from and the names of its streets, so the
+    dashboard can draw each traffic light exactly where it stands.
+    """
+    from simulation.network.geo import xy_to_lonlat, osm_node_ids
+    loc = getattr(model, "location", None)
     nodes = []
     for tid in model.tls_ids:
-        js = [model.junctions[j] for j in model.tls[tid].junctions if j in model.junctions]
-        if not js and tid in model.junctions:
-            js = [model.junctions[tid]]
+        jids = [j for j in model.tls[tid].junctions if j in model.junctions]
+        if not jids and tid in model.junctions:
+            jids = [tid]
+        js = [model.junctions[j] for j in jids]
         x = sum(j["x"] for j in js) / len(js) if js else None
         y = sum(j["y"] for j in js) / len(js) if js else None
-        nodes.append({"id": tid, "x": None if x is None else round(x, 2), "y": None if y is None else round(y, 2)})
+        node = {"id": tid, "x": None if x is None else round(x, 2), "y": None if y is None else round(y, 2)}
+        if loc and x is not None:
+            lon, lat = xy_to_lonlat(x, y, loc)
+            streets = sorted({e["name"] for e in model.edges.values()
+                              if e.get("name") and not e["function"] and (e["to"] in jids or e["from"] in jids)})
+            node.update({"lat": round(lat, 7), "lon": round(lon, 7), "osm_nodes": osm_node_ids(tid, *sorted(jids))[:8],
+                         "streets": streets[:4]})
+        nodes.append(node)
     graph = model.neighbor_graph()
     links = sorted({tuple(sorted((a, b))) for a, ns in graph.items() for b in ns})
     xs = [n["x"] for n in nodes if n["x"] is not None]
     ys = [n["y"] for n in nodes if n["y"] is not None]
     bounds = {"min_x": min(xs), "max_x": max(xs), "min_y": min(ys), "max_y": max(ys)} if xs else None
-    return {"nodes": nodes, "links": [list(l) for l in links], "bounds": bounds,
+    geo = {"source": "openstreetmap", "proj": loc["proj"], "license": "(c) OpenStreetMap contributors, ODbL 1.0"} if loc else None
+    return {"nodes": nodes, "links": [list(l) for l in links], "bounds": bounds, "geo": geo,
             "unpositioned": [n["id"] for n in nodes if n["x"] is None]}
