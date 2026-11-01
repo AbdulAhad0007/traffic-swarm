@@ -17,6 +17,7 @@ export function seedTables() {
     site_module_sections: MODULES.flatMap((m, i) => m.sections.map(([slug, name], j) => ({
       id: ++sectionId, module_id: i + 1, name, slug, is_enabled: true, sort_order: j + 1, updated_at: now,
     }))),
+    site_settings: [{ id: 1, theme: 'midnight', updated_at: now }],
     admin_sessions: [],
     admin_login_attempts: [],
   };

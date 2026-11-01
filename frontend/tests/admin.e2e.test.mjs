@@ -49,10 +49,66 @@ beforeEach(async () => {
   const fresh = seedTables();
   supabase.state.tables.site_modules = fresh.site_modules;
   supabase.state.tables.site_module_sections = fresh.site_module_sections;
+  supabase.state.tables.site_settings = fresh.site_settings;
   supabase.state.tables.admin_login_attempts = [];
   supabase.state.down = false;
   const cookie = await login();
   await toggleModule(cookie, 'overview', true);
+});
+
+const setTheme = (cookie, theme) => fetch(`${BASE}/api/admin/theme`, {
+  method: 'PATCH', headers: { ...JSON_HEADERS, ...(cookie ? { Cookie: cookie } : {}) }, body: JSON.stringify({ theme }),
+});
+
+test('theme PATCH without a session returns 401', async () => {
+  assert.equal((await setTheme(null, 'night-road')).status, 401);
+  assert.equal(supabase.state.tables.site_settings[0].theme, 'midnight');
+});
+
+test('theme PATCH with an unknown slug returns 400 invalid_theme and changes nothing', async () => {
+  const res = await setTheme(await login(), 'hotpink');
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).error, 'invalid_theme');
+  assert.equal(supabase.state.tables.site_settings[0].theme, 'midnight');
+});
+
+test('theme PATCH saves and /api/site-config returns it immediately', async () => {
+  const cookie = await login();
+  const res = await setTheme(cookie, 'survey-map');
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).theme, 'survey-map');
+  assert.equal((await siteConfig()).theme, 'survey-map');
+  const read = await fetch(`${BASE}/api/admin/theme`, { headers: { Cookie: cookie } });
+  assert.equal((await read.json()).theme, 'survey-map');
+});
+
+test('missing site_settings table: theme is midnight and module toggles still work', async () => {
+  const cookie = await login();
+  await siteConfig(); // settle the last known theme on the seeded midnight before the table disappears
+  delete supabase.state.tables.site_settings;
+  assert.equal((await setTheme(cookie, 'night-road')).status, 503);
+  assert.equal((await fetch(`${BASE}/api/admin/theme`, { headers: { Cookie: cookie } })).status, 503);
+  assert.equal((await toggleModule(cookie, 'prediction', false)).status, 200);
+  const config = await siteConfig();
+  assert.equal(config.theme, 'midnight');
+  assert.equal(config.modules.prediction.enabled, false);
+  await toggleModule(cookie, 'prediction', true);
+});
+
+test('database down after saving night-road: site-config still returns night-road', async () => {
+  const cookie = await login();
+  assert.equal((await setTheme(cookie, 'night-road')).status, 200);
+  assert.equal((await siteConfig()).theme, 'night-road');
+  supabase.state.down = true;
+  await sleep(5200); // let the 5 s config cache expire so the outage is actually read
+  assert.equal((await siteConfig()).theme, 'night-road');
+});
+
+test('saved row with an invalid theme returns midnight', async () => {
+  const cookie = await login();
+  supabase.state.tables.site_settings[0].theme = 'broken';
+  await toggleModule(cookie, 'overview', true); // clears the config cache
+  assert.equal((await siteConfig()).theme, 'midnight');
 });
 
 const uniqueIp = () => `10.0.0.${++ipCounter}`;

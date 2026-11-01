@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import { ALL_ENABLED, MODULES, buildEffectiveConfig, firstEnabledRoute } from '../lib/moduleRegistry.js';
 import { checkBackendRequest, checkLabRequest } from '../lib/labGuard.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
+import { DEFAULT_THEME, THEMES, normalizeTheme } from '../lib/themes.js';
 import { seedTables } from './helpers/fakeServices.mjs';
 
 const sql = readFileSync(new URL('../../db/migrations/001_admin_panel.sql', import.meta.url), 'utf8');
@@ -24,6 +25,14 @@ const onlyOn = (...keep) => {
   const off = MODULES.flatMap(m => m.sections.map(([s]) => `${m.slug}/${s}`)).filter(e => !keep.includes(e));
   return configWithout(...off);
 };
+
+test('normalizeTheme keeps known slugs and falls back to midnight', () => {
+  assert.deepEqual(THEMES.map(t => t.slug), ['midnight', 'night-road', 'survey-map']);
+  assert.equal(DEFAULT_THEME, 'midnight');
+  assert.equal(normalizeTheme('night-road'), 'night-road');
+  for (const bad of ['x', null, undefined, '__proto__', 'constructor', 7]) assert.equal(normalizeTheme(bad), 'midnight');
+  assert.equal(ALL_ENABLED.theme, 'midnight');
+});
 
 test('the exact eight modules exist once, in sidebar order', () => {
   assert.deepEqual(MODULES.map(m => [m.name, m.identifier]), [

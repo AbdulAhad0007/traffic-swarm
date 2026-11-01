@@ -39,7 +39,7 @@ Type a password of at least 12 characters. Copy the printed `ADMIN_PASSWORD_HASH
 - Set `TSI_GATEWAY_SECRET` on Vercel and the backends in the same deployment window. If only the backends have it, the website's calls to them are refused. When unset, the checks are off.
 
 ## 4. Apply the database migration
-In the Supabase dashboard, open **SQL Editor**, paste the contents of `db/migrations/001_admin_panel.sql`, and run it.
+In the Supabase dashboard, open **SQL Editor**, paste the contents of `db/migrations/001_admin_panel.sql`, and run it. Then do the same with `db/migrations/002_site_theme.sql`. Until `002` is applied, the site stays on Midnight Command, module toggles keep working, and the admin Theme section shows an error.
 
 It creates `site_modules`, `site_module_sections`, `admin_sessions` and `admin_login_attempts`, enables row-level security, and seeds 8 modules and 64 sections, all ON. Visitors see no change. It is safe to re-run: it never overwrites a saved toggle or creates duplicates.
 

@@ -36,3 +36,6 @@ simulation/scenarios/osm/user/
 # Lab jobs and evaluation-matrix raw runs (large; regenerate with the documented commands)
 experiments/lab/jobs/
 experiments/evaluation/
+
+# Local brainstorm/plan workspace
+.superpowers/

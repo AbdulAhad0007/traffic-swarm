@@ -1,3 +1,5 @@
+import { DEFAULT_THEME } from './themes.js';
+
 // The eight public modules and their sections. Shared by server and client, and kept in step with
 // db/migrations/001_admin_panel.sql (tests/registry.test.mjs compares them).
 export const MODULES = [
@@ -130,5 +132,5 @@ export function buildEffectiveConfig(moduleRows = [], sectionRows = []) {
   return { modules };
 }
 
-export const ALL_ENABLED = buildEffectiveConfig();
+export const ALL_ENABLED = { ...buildEffectiveConfig(), theme: DEFAULT_THEME };
 export const firstEnabledRoute = config => MODULES.find(m => m.route && config.modules[m.slug]?.enabled)?.route || null;
