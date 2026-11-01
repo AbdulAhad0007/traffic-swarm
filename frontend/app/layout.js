@@ -1,4 +1,5 @@
 import './globals.css';
+import { themeBootScript } from '@/lib/themeBoot';
 
 export const metadata = {
   title: 'Traffic Swarm Intelligence — Adaptive Command Lab',
@@ -7,8 +8,9 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { usePathname, useRouter } from 'next/navigation';
 import ModuleUnavailable from '@/components/ModuleUnavailable';
 import { ALL_ENABLED, firstEnabledRoute, moduleForRoute } from '@/lib/moduleRegistry';
+import { applyTheme } from '@/lib/themeClient';
 
 const REFRESH_MS = 15000;
 const SiteConfigContext = createContext(ALL_ENABLED);
@@ -17,7 +18,7 @@ export function SiteConfigProvider({ children }) {
     let active = true;
     const load = () => fetch('/api/site-config', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))))
-      .then(c => { if (active && c) setConfig(c); })
+      .then(c => { if (active && c) { setConfig(c); applyTheme(c.theme); } })
       .catch(() => { if (active) setConfig(c => c || ALL_ENABLED); });
     load();
     const t = setInterval(load, REFRESH_MS);

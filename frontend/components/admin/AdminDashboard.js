@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Car, ChevronDown, LogOut, RefreshCw } from 'lucide-react';
+import ThemePicker from '@/components/admin/ThemePicker';
 
 const when = iso => (iso ? new Date(iso).toLocaleString() : '—');
 
@@ -171,6 +172,8 @@ export default function AdminDashboard() {
           />
         ))}
       </div>
+
+      <ThemePicker notify={notify} onExpired={handleExpired} />
 
       {confirming && (
         <div className="explainer-backdrop" onClick={() => setConfirming(null)}>

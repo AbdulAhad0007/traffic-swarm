@@ -3,66 +3,8 @@
    Engineered for high-end AI Command Lab & Real-Time Traffic Simulation
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import './styles/tokens.css';
 
-:root {
-  color-scheme: dark;
-  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-
-  /* Neumorphic Dark Palette */
-  --bg-base: #090d16;
-  --bg-surface: #0e1524;
-  --bg-surface-elevated: #121a2d;
-  --bg-surface-sunken: #070a12;
-  --bg-card: #101828;
-
-  /* Borders & Lines */
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-highlight: rgba(255, 255, 255, 0.1);
-  --border-accent: rgba(56, 189, 248, 0.3);
-
-  /* Shadows — Neumorphic Extrusion (Convex) */
-  --neu-flat: 
-    6px 6px 14px rgba(0, 0, 0, 0.65), 
-    -4px -4px 10px rgba(255, 255, 255, 0.03),
-    inset 0 1px 1px rgba(255, 255, 255, 0.08);
-
-  --neu-elevated: 
-    10px 10px 24px rgba(0, 0, 0, 0.75), 
-    -6px -6px 16px rgba(255, 255, 255, 0.04),
-    inset 0 1px 1px rgba(255, 255, 255, 0.1);
-
-  --neu-floating: 
-    16px 16px 36px rgba(0, 0, 0, 0.85), 
-    -8px -8px 20px rgba(255, 255, 255, 0.04),
-    0 0 20px rgba(56, 189, 248, 0.12);
-
-  /* Shadows — Neumorphic Recessed (Sunken / Inset) */
-  --neu-inset: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.7), 
-    inset -3px -3px 6px rgba(255, 255, 255, 0.025);
-
-  --neu-inset-glow: 
-    inset 4px 4px 8px rgba(0, 0, 0, 0.75), 
-    inset -3px -3px 6px rgba(255, 255, 255, 0.03),
-    0 0 14px rgba(56, 189, 248, 0.25);
-
-  /* Vibrant Accents */
-  --accent-cyan: #38bdf8;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
-  --accent-indigo: #6366f1;
-  --accent-violet: #8b5cf6;
-
-  /* Typography Colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-dim: #475569;
-}
 
 * {
   box-sizing: border-box;
@@ -73,10 +15,7 @@ body {
   padding: 0;
   font-family: var(--font-main);
   background-color: var(--bg-base);
-  background-image: 
-    radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.06) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 45%),
-    radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 60%);
+  background-image: var(--bg-image);
   background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
@@ -4191,6 +4130,21 @@ header.app-main-header p { margin: 0; font-size: 13px; }
 .module-unavailable { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 64px 20px; }
 .module-unavailable h2 { margin: 0; }
 .admin-root { min-height: 100vh; background: var(--bg-base); color: var(--text-primary); }
+.admin-theme { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border-highlight); }
+.admin-theme h2 { margin: 0 0 4px; }
+.admin-theme > p { margin: 0 0 16px; }
+.admin-theme .error { margin-bottom: 16px; }
+.theme-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+button.theme-card { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-height: 170px; padding: 18px; text-align: left; white-space: normal; background: var(--bg-base); background-image: var(--bg-image); color: var(--text-primary); font-family: var(--font-main); border: 1px solid var(--line-strong); border-radius: var(--radius); box-shadow: none; cursor: pointer; transform: none; }
+button.theme-card:hover:not(:disabled) { background: var(--bg-base); background-image: var(--bg-image); color: var(--text-primary); border-color: var(--accent); transform: none; }
+button.theme-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.theme-card:disabled { cursor: default; opacity: 1; background: var(--bg-base); background-image: var(--bg-image); color: var(--text-primary); }
+button.theme-card.active { border: 2px solid var(--accent); padding: 17px; }
+.theme-card-name { font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; line-height: 1.15; }
+.theme-card-desc { font-size: 0.82rem; line-height: 1.4; color: var(--text-secondary); }
+.theme-card-swatches { display: flex; gap: 6px; }
+.theme-card-swatches i { width: 28px; height: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); }
+.theme-card-state { display: inline-flex; align-items: center; gap: 5px; margin-top: auto; font-size: 0.8rem; font-weight: 600; color: var(--accent); }
 .admin-login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 .admin-login { width: min(400px, 100%); display: flex; flex-direction: column; gap: 14px; margin: 0; }
 .admin-login h1 { margin: 6px 0 0; font-size: 1.4rem; }

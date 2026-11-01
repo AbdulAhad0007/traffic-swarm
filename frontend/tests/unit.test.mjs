@@ -5,6 +5,8 @@ import { ALL_ENABLED, MODULES, buildEffectiveConfig, firstEnabledRoute } from '.
 import { checkBackendRequest, checkLabRequest } from '../lib/labGuard.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { DEFAULT_THEME, THEMES, normalizeTheme } from '../lib/themes.js';
+import { themeBootScript } from '../lib/themeBoot.js';
+import { applyTheme } from '../lib/themeClient.js';
 import { seedTables } from './helpers/fakeServices.mjs';
 
 const sql = readFileSync(new URL('../../db/migrations/001_admin_panel.sql', import.meta.url), 'utf8');
@@ -32,6 +34,69 @@ test('normalizeTheme keeps known slugs and falls back to midnight', () => {
   assert.equal(normalizeTheme('night-road'), 'night-road');
   for (const bad of ['x', null, undefined, '__proto__', 'constructor', 7]) assert.equal(normalizeTheme(bad), 'midnight');
   assert.equal(ALL_ENABLED.theme, 'midnight');
+});
+
+function fakeDom(cookie = '') {
+  const attrs = {}, appended = [], events = [];
+  const document = {
+    cookie,
+    documentElement: { setAttribute: (k, v) => { attrs[k] = v; }, getAttribute: k => attrs[k] ?? null },
+    head: { appendChild: el => appended.push(el) },
+    createElement: () => ({}),
+    querySelector: sel => appended.find(el => sel.includes(el.href)) || null,
+  };
+  const window = { dispatchEvent: e => events.push(e.type) };
+  return { attrs, appended, events, document, window };
+}
+const runBoot = (cookie, pathname = '/') => {
+  const dom = fakeDom(cookie);
+  new Function('document', 'location', themeBootScript)(dom.document, { pathname });
+  return dom;
+};
+
+test('boot script applies a valid cookie theme and its fonts', () => {
+  const { attrs, appended } = runBoot('a=1; tsi-theme=night-road');
+  assert.equal(attrs['data-theme'], 'night-road');
+  assert.match(appended[0].href, /Saira/);
+});
+
+test('boot script ignores a tampered cookie and leaves midnight', () => {
+  for (const bad of ['tsi-theme=<script>alert(1)</script>', 'tsi-theme=__proto__', 'tsi-theme=']) {
+    const { attrs, appended } = runBoot(bad);
+    assert.equal(attrs['data-theme'], undefined);
+    assert.equal(appended.length, 0);
+  }
+});
+
+test('boot script skips /admin paths', () => {
+  assert.equal(runBoot('tsi-theme=survey-map', '/admin').attrs['data-theme'], undefined);
+});
+
+test('applyTheme announces a change once and not on a repeat call', () => {
+  const dom = fakeDom();
+  globalThis.document = dom.document;
+  globalThis.window = dom.window;
+  try {
+    applyTheme('survey-map');
+    applyTheme('survey-map');
+    assert.equal(dom.attrs['data-theme'], 'survey-map');
+    assert.deepEqual(dom.events, ['tsi-theme-change']);
+    assert.equal(dom.appended.length, 1);
+  } finally {
+    delete globalThis.document;
+    delete globalThis.window;
+  }
+});
+
+test('admin dashboard renders ThemePicker after the module list', () => {
+  const src = readFileSync(new URL('../components/admin/AdminDashboard.js', import.meta.url), 'utf8');
+  const picker = src.indexOf('<ThemePicker');
+  assert.ok(picker > src.indexOf('className="admin-modules"'));
+});
+
+test('the admin area is pinned to the midnight theme', () => {
+  const src = readFileSync(new URL('../app/admin/layout.js', import.meta.url), 'utf8');
+  assert.match(src, /data-theme="midnight"/);
 });
 
 test('the exact eight modules exist once, in sidebar order', () => {

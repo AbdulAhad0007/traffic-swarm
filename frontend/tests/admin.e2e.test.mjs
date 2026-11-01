@@ -104,6 +104,28 @@ test('database down after saving night-road: site-config still returns night-roa
   assert.equal((await siteConfig()).theme, 'night-road');
 });
 
+const themeCookie = res => res.headers.getSetCookie().find(c => c.startsWith('tsi-theme='))?.split(';')[0];
+
+test('proxy sets the theme cookie on a page, and not when it is already correct', async () => {
+  await setTheme(await login(), 'night-road');
+  assert.equal(themeCookie(await fetch(`${BASE}/`)), 'tsi-theme=night-road');
+  assert.equal(themeCookie(await fetch(`${BASE}/`, { headers: { Cookie: 'tsi-theme=night-road' } })), undefined);
+});
+
+test('proxy sets the theme cookie on the redirect when overview is off, and on /unavailable', async () => {
+  const cookie = await login();
+  await setTheme(cookie, 'survey-map');
+  await toggleModule(cookie, 'overview', false);
+  const res = await fetch(`${BASE}/`, { redirect: 'manual' });
+  assert.equal(res.status, 307);
+  assert.equal(themeCookie(res), 'tsi-theme=survey-map');
+  assert.equal(themeCookie(await fetch(`${BASE}/unavailable`)), 'tsi-theme=survey-map');
+});
+
+test('root HTML contains the theme boot script', async () => {
+  assert.match(await (await fetch(`${BASE}/`)).text(), /tsi-theme=/);
+});
+
 test('saved row with an invalid theme returns midnight', async () => {
   const cookie = await login();
   supabase.state.tables.site_settings[0].theme = 'broken';
