@@ -23,6 +23,11 @@ export async function proxy(request) {
     return NextResponse.json({ error: 'module_disabled', detail: 'This feature is currently unavailable.' }, { status: 403 });
   }
 
+  if (pathname.startsWith('/cesium/')) {
+    if (config.modules['view-3d'].enabled) return NextResponse.next();
+    return NextResponse.json({ error: 'module_disabled', detail: 'This feature is currently unavailable.' }, { status: 403 });
+  }
+
   const themed = response => withTheme(request, response, config.theme);
   const mod = moduleForRoute(pathname);
   if (!mod || config.modules[mod.slug].enabled) return themed(NextResponse.next());
@@ -41,5 +46,5 @@ export async function proxy(request) {
 }
 
 export const config = {
-  matcher: ['/', '/ghaziabad', '/live', '/demo', '/controllers', '/prediction', '/mixed', '/unavailable', '/osm/:path*'],
+  matcher: ['/', '/ghaziabad', '/live', '/demo', '/controllers', '/prediction', '/mixed', '/3d-view', '/unavailable', '/osm/:path*', '/cesium/:path*'],
 };

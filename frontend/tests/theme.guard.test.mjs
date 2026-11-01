@@ -8,7 +8,7 @@ import { MODULES } from '../lib/moduleRegistry.js';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const files = dir => readdirSync(join(ROOT, dir)).filter(f => /\.(js|css)$/.test(f)).map(f => join(dir, f));
-const THEMED_FILES = ['app/globals.css', 'app/styles/system.css', 'app/(public)/page.js', ...files('components'), ...files('components/admin')];
+const THEMED_FILES = ['app/globals.css', 'app/styles/system.css', 'app/(public)/page.js', ...files('components'), ...files('components/admin'), ...files('components/view3d'), 'app/styles/view3d.css'];
 const LITERAL = /(?<![&\w(])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b|\brgba?\(/gi;
 
 test('themed files contain no color literals', () => {
@@ -17,7 +17,7 @@ test('themed files contain no color literals', () => {
 });
 
 test('every section slug is still referenced', () => {
-  const source = [...files('components'), 'app/(public)/page.js'].map(f => readFileSync(join(ROOT, f), 'utf8')).join('\n');
+  const source = [...files('components'), ...files('components/view3d'), 'app/(public)/page.js'].map(f => readFileSync(join(ROOT, f), 'utf8')).join('\n');
   const missing = MODULES.flatMap(m => m.sections.map(([slug]) => slug)).filter(slug => !source.includes(`'${slug}'`));
   assert.deepEqual(missing, []);
 });

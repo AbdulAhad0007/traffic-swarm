@@ -136,6 +136,7 @@ class SumoSession:
         self.extra_args = [str(a) for a in (extra_args or [])]
         self.arrived_ids: list = []
         self.departed_ids: list = []
+        self.extra_vehicle_vars: list = []    # requested by a hook in on_start; empty unless the 3D View records frames
 
     def start(self) -> None:
         name = "sumo-gui" if self.gui else "sumo"
@@ -187,7 +188,7 @@ class SumoSession:
         """Advance one step, record vehicle/queue telemetry, return total halting vehicles."""
         traci.simulationStep()
         self.now = traci.simulation.getTime()
-        vehicle_vars = [tc.VAR_WAITING_TIME, tc.VAR_SPEED, tc.VAR_FUELCONSUMPTION, tc.VAR_CO2EMISSION, tc.VAR_ROAD_ID]
+        vehicle_vars = [tc.VAR_WAITING_TIME, tc.VAR_SPEED, tc.VAR_FUELCONSUMPTION, tc.VAR_CO2EMISSION, tc.VAR_ROAD_ID, *self.extra_vehicle_vars]
         self.departed_ids = list(traci.simulation.getDepartedIDList())
         for vid in self.departed_ids:
             traci.vehicle.subscribe(vid, vehicle_vars)

@@ -10,18 +10,20 @@ const ID = '[^/]+';
 
 const LAB_RULES = [
   ['GET', 'health', [ALWAYS]],
-  ['GET', 'options', ['live-lab/experiment-form', 'before-after/demo-form']],
-  ['GET', 'osm-areas', ['live-lab/real-world-areas', 'live-lab/experiment-form', 'before-after/demo-form']],
+  ['GET', 'options', ['live-lab/experiment-form', 'before-after/demo-form', 'view-3d/run-selector']],
+  ['GET', 'osm-areas', ['live-lab/real-world-areas', 'live-lab/experiment-form', 'before-after/demo-form', 'view-3d/run-selector']],
   ['POST', 'osm-areas', ['live-lab/real-world-areas']],
-  ['GET', 'jobs', ['live-lab', 'before-after']],
-  ['GET', `jobs/${ID}`, ['live-lab', 'before-after']],
+  ['GET', 'jobs', ['live-lab', 'before-after', 'view-3d']],
+  ['GET', `jobs/${ID}`, ['live-lab', 'before-after', 'view-3d']],
+  ['GET', `jobs/${ID}/network3d`, ['view-3d']],
+  ['GET', `jobs/${ID}/frames`, ['view-3d']],
   ['GET', `jobs/${ID}/live`, [...VIEWS, 'live-lab/emergency-panel', 'live-lab/fuel-card', 'live-lab/swarm-calls',
     'before-after/live-comparison', 'before-after/replay', 'before-after/emergency-panels', 'before-after/fuel-card', 'before-after/kpi-table']],
   ['POST', `jobs/${ID}/stop`, ['live-lab/jobs-table', 'before-after/demo-jobs']],
   ['POST', 'stop-all', ['live-lab/stop-all']],
   ['GET', `jobs/${ID}/replay`, ['before-after/replay']],
   ['GET', `jobs/${ID}/result`, ['live-lab/fuel-card', 'before-after/fuel-card', 'before-after/kpi-table']],
-  ['GET', `jobs/${ID}/calls`, ['live-lab/swarm-calls']],
+  ['GET', `jobs/${ID}/calls`, ['live-lab/swarm-calls', 'view-3d/intersection-inspector']],
   ['GET', `jobs/${ID}/messages`, ['live-lab']],
   ['GET', 'runs', RUN_READERS],
   ['GET', 'runs/comparison', RUN_READERS],
@@ -61,7 +63,7 @@ export function checkLabRequest(config, method, segments, bodyText = '') {
     // The kind decides who owns a new job. Anything other than 'demo' is an experiment or a 400 from the lab.
     let kind;
     try { kind = JSON.parse(bodyText)?.kind; } catch { kind = undefined; }
-    const any = kind === 'demo' ? ['before-after/demo-form', 'overview/command-center'] : ['live-lab/experiment-form'];
+    const any = kind === 'demo' ? ['before-after/demo-form', 'overview/command-center'] : ['live-lab/experiment-form', 'view-3d/run-selector'];
     return decide(config, { any });
   }
   return decide(config, LAB_RULES.find(r => r.method === method && r.re.test(path)));

@@ -20,6 +20,9 @@
 # production
 /build
 
+# generated from node_modules/cesium by scripts/copy-cesium-assets.mjs
+/public/cesium
+
 # misc
 .DS_Store
 *.pem

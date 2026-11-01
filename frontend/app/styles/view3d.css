@@ -1,0 +1,317 @@
+/* 3D View only. Loaded with the module, so no other page pays for it. */
+.view3d {
+  position: relative;
+  height: calc(100dvh - 96px);
+  min-height: 460px;
+  overflow: hidden;
+  background: var(--scene-bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  font-family: var(--font-main);
+  color: var(--text-primary);
+}
+
+.view3d.is-fullscreen {
+  height: 100dvh;
+  border: 0;
+  border-radius: 0;
+}
+
+.view3d-canvas,
+.view3d-canvas .cesium-widget,
+.view3d-canvas canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.view3d-canvas .cesium-widget-credits {
+  left: 8px;
+  right: auto;
+  bottom: 4px;
+}
+
+.view3d-top,
+.view3d-side,
+.view3d-playback,
+.view3d-message,
+.view3d-banner {
+  position: absolute;
+  z-index: 2;
+}
+
+.view3d-top {
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.view3d-top > * {
+  pointer-events: auto;
+}
+
+.view3d-time,
+.view3d-tools,
+.view3d-card,
+.view3d-playback,
+.view3d-message,
+.view3d-banner {
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-2);
+}
+
+.view3d-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.view3d-time b {
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+
+.view3d-dot::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.view3d-dot.c-live::before {
+  background: var(--status-ok);
+}
+
+.view3d-dot.c-recording::before {
+  background: var(--accent);
+}
+
+.view3d-dot.c-offline::before {
+  background: var(--status-danger);
+}
+
+.view3d-note {
+  margin: 0;
+  color: var(--warn-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.view3d-note.danger {
+  color: var(--danger-soft);
+}
+
+.view3d-tools {
+  display: flex;
+  align-self: flex-start;
+  gap: 4px;
+  padding: 4px;
+}
+
+.view3d button.icon {
+  padding: 6px;
+}
+
+.view3d-side {
+  top: 64px;
+  right: 12px;
+  bottom: 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 270px;
+  max-width: calc(100% - 24px);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.view3d-side > * {
+  flex-shrink: 0;
+  pointer-events: auto;
+}
+
+.view3d-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+}
+
+.view3d-card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 14px;
+}
+
+.view3d-card summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.view3d-card details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.view3d-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 4px;
+  color: var(--text-secondary);
+}
+
+.view3d-card select {
+  width: 100%;
+  min-width: 0;
+}
+
+.view3d-card label.view3d-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.view3d-check input {
+  width: auto;
+  margin: 0;
+}
+
+.view3d-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.view3d-facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.view3d-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.view3d-facts dt {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.view3d-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-family: var(--font-mono);
+}
+
+.view3d-legend {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+}
+
+.view3d-legend i {
+  width: 12px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.view3d-legend .heat-low {
+  background: var(--scene-heat-low);
+}
+
+.view3d-legend .heat-mid {
+  background: var(--scene-heat-mid);
+}
+
+.view3d-legend .heat-high {
+  background: var(--scene-heat-high);
+}
+
+.view3d-playback {
+  left: 12px;
+  bottom: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.view3d-speed {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+
+.view3d-speed select {
+  width: auto;
+  padding-block: 2px;
+}
+
+.view3d-message {
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 32px));
+  padding: 20px 24px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.view3d-banner {
+  left: 50%;
+  bottom: 74px;
+  padding: 6px 12px;
+  color: var(--danger-soft);
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 900px) {
+  .view3d {
+    height: calc(100dvh - 120px);
+  }
+
+  .view3d-side {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 96px;
+    width: auto;
+    max-height: 40%;
+  }
+
+  .view3d-playback span {
+    display: none;
+  }
+}

@@ -68,6 +68,10 @@ def build_hooks(variant, cfg, out_dir, settings, has_ambulances, live=False, run
     model = NetworkModel.from_net_file(net_file_from_cfg(cfg))
     hooks = [LiveRecorder(model, out_dir, run_info=run_info, stop_file=stop_file,
                           realtime_factor=realtime_factor if live else None)]
+    if live:
+        from simulation.live.frame_recorder import FrameRecorder, frames_enabled
+        if frames_enabled():
+            hooks.append(FrameRecorder(model, out_dir, live_recorder=hooks[0]))
     if has_ambulances or VARIANTS[variant][2]:
         maps = {t: pm for t, pm in build_all(model, settings).items() if pm.controllable}
         hooks.append(EmergencyPriority(maps, settings, enabled=VARIANTS[variant][2], out_dir=out_dir,

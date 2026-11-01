@@ -9,7 +9,8 @@ import { themeBootScript } from '../lib/themeBoot.js';
 import { applyTheme, themeFromCookie } from '../lib/themeClient.js';
 import { seedTables } from './helpers/fakeServices.mjs';
 
-const sql = readFileSync(new URL('../../db/migrations/001_admin_panel.sql', import.meta.url), 'utf8');
+const migration = name => readFileSync(new URL(`../../db/migrations/${name}`, import.meta.url), 'utf8');
+const sql = migration('001_admin_panel.sql') + migration('003_view_3d_module.sql');
 const lab = path => path.split('/');
 
 // All on except the given entries ('module' or 'module/section').
@@ -145,12 +146,12 @@ test('the admin area is pinned to the midnight theme', () => {
   assert.match(src, /data-theme="midnight"/);
 });
 
-test('the exact eight modules exist once, in sidebar order', () => {
+test('the exact nine modules exist once, in sidebar order', () => {
   assert.deepEqual(MODULES.map(m => [m.name, m.identifier]), [
     ['Overview', 'CORE'], ['Signal Map', 'OSM'], ['Live Lab', 'LIVE'], ['Before / After', 'DUAL'],
-    ['Controllers', 'EVAL'], ['Prediction', 'AI'], ['Mixed Traffic', 'MIX'], ['How It Works', 'VIVA'],
+    ['Controllers', 'EVAL'], ['Prediction', 'AI'], ['Mixed Traffic', 'MIX'], ['How It Works', 'VIVA'], ['3D View', '3DV'],
   ]);
-  assert.equal(MODULES.flatMap(m => m.sections).length, 64);
+  assert.equal(MODULES.flatMap(m => m.sections).length, 74);
 });
 
 test('the migration seeds every registered module and section under the right module', () => {
@@ -179,7 +180,7 @@ test('one section off leaves every other section on', () => {
 
 test('landing route falls through to the first enabled module', () => {
   assert.equal(firstEnabledRoute(configWithout('overview')), '/ghaziabad');
-  assert.equal(firstEnabledRoute(configWithout('overview', 'signal-map', 'live-lab', 'before-after', 'controllers', 'prediction', 'mixed-traffic')), null);
+  assert.equal(firstEnabledRoute(configWithout('overview', 'signal-map', 'live-lab', 'before-after', 'controllers', 'prediction', 'mixed-traffic', 'view-3d')), null);
 });
 
 test('every endpoint the UI calls is allowed when everything is on', () => {
@@ -187,7 +188,7 @@ test('every endpoint the UI calls is allowed when everything is on', () => {
     ['GET', 'health'], ['GET', 'options'], ['GET', 'osm-areas'], ['POST', 'osm-areas'], ['GET', 'jobs'], ['GET', 'jobs/abc123'], ['GET', 'jobs/abc123/live'],
     ['POST', 'jobs/abc123/stop'], ['POST', 'stop-all'], ['GET', 'jobs/abc123/replay'], ['GET', 'jobs/abc123/result'], ['GET', 'jobs/abc123/calls'],
     ['GET', 'jobs/abc123/messages'], ['GET', 'runs'], ['GET', 'runs/comparison'], ['GET', 'runs/replay'], ['GET', 'runs/calls'], ['GET', 'reports'],
-    ['GET', 'reports/eval-v1'], ['GET', 'swarm/mesh/state'], ['POST', 'swarm/mesh/step'],
+    ['GET', 'reports/eval-v1'], ['GET', 'jobs/abc123/network3d'], ['GET', 'jobs/abc123/frames'], ['GET', 'swarm/mesh/state'], ['POST', 'swarm/mesh/step'],
   ]) {
     assert.equal(checkLabRequest(ALL_ENABLED, method, lab(path)).allowed, true, `${method} ${path}`);
     assert.equal(checkLabRequest(ALL_ENABLED, method, lab(`api/lab/${path}`)).allowed, true, `${method} api/lab/${path}`);
@@ -197,7 +198,7 @@ test('every endpoint the UI calls is allowed when everything is on', () => {
 test('shared endpoints stay open while any owner remains, and close with the last', () => {
   assert.equal(checkLabRequest(configWithout('live-lab'), 'GET', lab('options')).allowed, true);
   assert.equal(checkLabRequest(configWithout('before-after'), 'GET', lab('options')).allowed, true);
-  assert.equal(checkLabRequest(configWithout('live-lab', 'before-after'), 'GET', lab('options')).allowed, false);
+  assert.equal(checkLabRequest(configWithout('live-lab', 'before-after', 'view-3d'), 'GET', lab('options')).allowed, false);
   assert.equal(checkLabRequest(configWithout('controllers'), 'GET', lab('runs')).allowed, true);
   assert.equal(checkLabRequest(configWithout('controllers', 'overview'), 'GET', lab('runs')).allowed, false);
 });
@@ -205,14 +206,29 @@ test('shared endpoints stay open while any owner remains, and close with the las
 test('single-owner endpoints follow their section', () => {
   assert.equal(checkLabRequest(configWithout('live-lab/stop-all'), 'POST', lab('stop-all')).error, 'module_disabled');
   assert.equal(checkLabRequest(configWithout('before-after/replay'), 'GET', lab('jobs/a/replay')).allowed, false);
-  assert.equal(checkLabRequest(configWithout('live-lab/swarm-calls'), 'GET', lab('jobs/a/calls')).allowed, false);
+  assert.equal(checkLabRequest(configWithout('live-lab/swarm-calls', 'view-3d/intersection-inspector'), 'GET', lab('jobs/a/calls')).allowed, false);
   assert.equal(checkLabRequest(configWithout('controllers/evaluation-ci-chart', 'controllers/evaluation-paired-tests'), 'GET', lab('reports')).allowed, false);
   assert.equal(checkLabRequest(onlyOn('controllers/evaluation-ci-chart'), 'GET', lab('reports/x')).allowed, true);
 });
 
+test('3D View data follows its module, and it can start experiments only through its run selector', () => {
+  const off = configWithout('view-3d');
+  for (const path of ['jobs/abc123/network3d', 'jobs/abc123/frames']) {
+    assert.equal(checkLabRequest(off, 'GET', lab(path)).allowed, false, path);
+    assert.equal(checkLabRequest(configWithout('live-lab'), 'GET', lab(path)).allowed, true, path);
+  }
+  const exp = JSON.stringify({ kind: 'experiment' });
+  assert.equal(checkLabRequest(configWithout('live-lab'), 'POST', lab('jobs'), exp).allowed, true);
+  assert.equal(checkLabRequest(configWithout('live-lab', 'view-3d/run-selector'), 'POST', lab('jobs'), exp).allowed, false);
+});
+
+test('the 3D View migration starts the module off', () => {
+  assert.match(migration('003_view_3d_module.sql'), /\('3D View', 'view-3d', '3DV', false, 9\)/);
+});
+
 test('job creation is decided by its kind', () => {
   const demo = JSON.stringify({ kind: 'demo' }), exp = JSON.stringify({ kind: 'experiment' });
-  const noLive = configWithout('live-lab');
+  const noLive = configWithout('live-lab', 'view-3d');
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), exp).allowed, false);
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), demo).allowed, true);
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), '{}').allowed, false, 'the lab treats a missing kind as an experiment');

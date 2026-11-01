@@ -188,9 +188,9 @@ test('3. login sets a hardened cookie and opens the dashboard', async () => {
   assert.match(html, /Module Control|AdminDashboard/);
 });
 
-test('4-5. all eight modules appear once, with their sections under the right module', async () => {
+test('4-5. all nine modules appear once, with their sections under the right module', async () => {
   const body = await (await fetch(`${BASE}/api/admin/modules`, { headers: { Cookie: await login() } })).json();
-  assert.deepEqual(body.modules.map(m => m.identifier), ['CORE', 'OSM', 'LIVE', 'DUAL', 'EVAL', 'AI', 'MIX', 'VIVA']);
+  assert.deepEqual(body.modules.map(m => m.identifier), ['CORE', 'OSM', 'LIVE', 'DUAL', 'EVAL', 'AI', 'MIX', 'VIVA', '3DV']);
   for (const m of MODULES) {
     const row = body.modules.find(r => r.slug === m.slug);
     assert.deepEqual(row.sections.map(s => s.slug), m.sections.map(([s]) => s));
@@ -270,6 +270,16 @@ test('Signal Map snapshots follow the module', async () => {
   assert.equal((await fetch(`${BASE}/osm/delhi.json`)).status, 403);
 });
 
+test('3D View files and data follow the module', async () => {
+  const cookie = await login();
+  assert.equal((await fetch(`${BASE}/cesium/Assets/approximateTerrainHeights.json`)).status, 200);
+  await toggleModule(cookie, 'view-3d', false);
+  assert.equal((await fetch(`${BASE}/cesium/Assets/approximateTerrainHeights.json`)).status, 403);
+  lab.hits.length = 0;
+  assert.equal((await fetch(`${BASE}/api/lab/jobs/abc/frames`)).status, 403);
+  assert.equal(lab.hits.length, 0, 'a disabled module never reaches the Lab API');
+});
+
 test('12. APIs enforce the rules before anything reaches the upstream', async () => {
   const cookie = await login();
   lab.hits.length = 0;
@@ -278,6 +288,7 @@ test('12. APIs enforce the rules before anything reaches the upstream', async ()
   assert.equal(stop.status, 403);
   assert.equal((await stop.json()).error, 'module_disabled');
   await toggleModule(cookie, 'live-lab', false);
+  await toggleModule(cookie, 'view-3d', false);
   const job = await fetch(`${BASE}/api/lab/api/lab/jobs`, { method: 'POST', body: '{"kind":"experiment"}' });
   assert.equal(job.status, 403);
   assert.equal(lab.hits.length, 0, 'blocked calls never left the proxy');

@@ -18,7 +18,8 @@ import {
   Cpu,
   Car,
   MapPin,
-  BookOpen
+  BookOpen,
+  Globe
 } from 'lucide-react';
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
 import { useSiteConfig } from '@/components/SiteConfigProvider';
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
   { href: '/prediction', label: 'Prediction', icon: TrendingUp, tag: 'AI', module: 'prediction' },
   { href: '/mixed', label: 'Mixed Traffic', icon: Layers, tag: 'MIX', module: 'mixed-traffic' },
 ];
+const VIEW_3D_ITEM = { href: '/3d-view', label: '3D View', icon: Globe, tag: '3DV', module: 'view-3d' };
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -53,6 +55,34 @@ export default function Sidebar() {
 
   // Icon-only mode is a desktop feature; the mobile drawer is always expanded
   const isCollapsed = collapsed && !isMobile;
+
+  const navLink = ({ href, label, icon: Icon, tag }) => {
+    const isActive = pathname === href;
+    return (
+      <Link
+        key={href}
+        href={href}
+        className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+        title={isCollapsed ? label : undefined}
+      >
+        <div className="nav-icon-wrap">
+          <Icon
+            size={18}
+            color={isActive ? 'var(--accent)' : 'currentColor'}
+          />
+        </div>
+        {!isCollapsed && (
+          <>
+            <span className="nav-label">{label}</span>
+            <span className={`nav-tag ${tag === 'LIVE' ? 'tag-live' : ''}`}>
+              {tag}
+            </span>
+          </>
+        )}
+        {isCollapsed && isActive && <div className="collapsed-active-indicator" />}
+      </Link>
+    );
+  };
 
   // Close mobile drawer on route change
   useEffect(() => {
@@ -156,33 +186,7 @@ export default function Sidebar() {
 
         {/* Navigation Links */}
         <nav className="sidebar-nav">
-          {NAV_ITEMS.filter(item => moduleOn(item.module)).map(({ href, label, icon: Icon, tag }) => {
-            const isActive = pathname === href;
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-                title={isCollapsed ? label : undefined}
-              >
-                <div className="nav-icon-wrap">
-                  <Icon
-                    size={18}
-                    color={isActive ? 'var(--accent)' : 'currentColor'}
-                  />
-                </div>
-                {!isCollapsed && (
-                  <>
-                    <span className="nav-label">{label}</span>
-                    <span className={`nav-tag ${tag === 'LIVE' ? 'tag-live' : ''}`}>
-                      {tag}
-                    </span>
-                  </>
-                )}
-                {isCollapsed && isActive && <div className="collapsed-active-indicator" />}
-              </Link>
-            );
-          })}
+          {NAV_ITEMS.filter(item => moduleOn(item.module)).map(item => navLink(item))}
           {moduleOn('how-it-works') && <button
             type="button"
             className="sidebar-nav-item sidebar-explainer-btn"
@@ -199,6 +203,7 @@ export default function Sidebar() {
               </>
             )}
           </button>}
+          {moduleOn(VIEW_3D_ITEM.module) && navLink(VIEW_3D_ITEM)}
         </nav>
 
         {/* Bottom System Telemetry Widget */}

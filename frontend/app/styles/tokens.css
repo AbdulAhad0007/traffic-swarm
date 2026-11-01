@@ -46,6 +46,16 @@
   --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --map-base: dark;
+  --scene-bg: #060a13;
+  --scene-ground: #0b1322;
+  --scene-basemap-alpha: 0.55;
+  --scene-atmosphere: 1;
+  --scene-road-casing: #24344d;
+  --scene-road-center: #2f6f92;
+  --scene-vehicle: #e0f7ff;
+  --scene-heat-low: #38bdf8;
+  --scene-heat-mid: #a78bfa;
+  --scene-heat-high: #f43f5e;
 }
 
 [data-theme='night-road'] {
@@ -87,6 +97,16 @@
   --font-display: 'Saira Condensed', 'Arial Narrow', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --map-base: dark;
+  --scene-bg: #0d0e10;
+  --scene-ground: #17181a;
+  --scene-basemap-alpha: 0.45;
+  --scene-atmosphere: 0;
+  --scene-road-casing: #3a3b3f;
+  --scene-road-center: #ffb000;
+  --scene-vehicle: #f6f1e3;
+  --scene-heat-low: #ffb000;
+  --scene-heat-mid: #ff8a3d;
+  --scene-heat-high: #ff5a52;
 }
 
 [data-theme='survey-map'] {
@@ -128,6 +148,16 @@
   --font-display: 'Newsreader', Georgia, serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   --map-base: light;
+  --scene-bg: #dfe8e0;
+  --scene-ground: #e7eee4;
+  --scene-basemap-alpha: 0.8;
+  --scene-atmosphere: 0;
+  --scene-road-casing: #2f4a46;
+  --scene-road-center: #fbfcf8;
+  --scene-vehicle: #00514e;
+  --scene-heat-low: #006f6b;
+  --scene-heat-mid: #d9480f;
+  --scene-heat-high: #8f1515;
 }
 
 /* Shared derived tokens, and the older names the stylesheet still uses until each module is migrated. */

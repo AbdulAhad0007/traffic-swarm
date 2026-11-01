@@ -49,6 +49,11 @@ select (select count(*) from site_modules) as modules,
        (select count(*) from site_module_sections) as sections;  -- expect 8 and 64
 ```
 
+### 3D View module
+Run `db/migrations/003_view_3d_module.sql` the same way, **before deploying the code that includes it**. A registered module with no database row counts as enabled, so deploying first would publish 3D View with no working toggle. The migration adds module 9 and 10 sections, and the module starts off.
+
+After deploying, restart the Lab API so it serves the new `network3d` and `frames` endpoints. Runs recorded before that have no vehicle data. New Lab runs record about 30 KB per simulated second at 500 vehicles, capped at 200 MB per run; set `TSI_LAB_CAPTURE_FRAMES=0` on the Lab API to turn recording off.
+
 ## 5. Deploy
 Deploy in this order: Render backend, then the Lab API, then Vercel.
 

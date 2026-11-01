@@ -186,6 +186,33 @@ def job_replay(job_id: str, controller: str):
     return {**replay_frames(dirs[controller]), "layout": _json(dirs[controller] / "live" / "layout.json")}
 
 
+def _live_dir(job_id: str, controller: str | None) -> Path:
+    j, d = _job(job_id)
+    dirs = part_dirs(j, d)
+    name = controller or j["spec"]["controllers"][0]
+    if name not in dirs:
+        raise HTTPException(400, "controller is not part of this job")
+    return dirs[name] / "live"
+
+
+@app.get("/api/lab/jobs/{job_id}/network3d")
+def job_network3d(job_id: str, controller: str | None = None):
+    network = _json(_live_dir(job_id, controller) / "network3d.json")
+    if network is None:
+        raise HTTPException(404, "no vehicle data recorded for this run")
+    return network
+
+
+@app.get("/api/lab/jobs/{job_id}/frames")
+def job_frames(job_id: str, controller: str | None = None, after: float | None = None, limit: int = Query(30, ge=1, le=120)):
+    """Recorded vehicle and signal frames newer than `after`, oldest first, with the recording's manifest."""
+    from simulation.live.frame_recorder import read_frames
+    data = read_frames(_live_dir(job_id, controller), after, limit)
+    if data is None:
+        raise HTTPException(404, "no vehicle data recorded for this run")
+    return data
+
+
 @app.get("/api/lab/jobs/{job_id}/result")
 def job_result(job_id: str):
     j, d = _job(job_id)

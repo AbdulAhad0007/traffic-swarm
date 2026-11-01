@@ -1,7 +1,7 @@
 import { DEFAULT_THEME } from './themes.js';
 
-// The eight public modules and their sections. Shared by server and client, and kept in step with
-// db/migrations/001_admin_panel.sql (tests/registry.test.mjs compares them).
+// The nine public modules and their sections. Shared by server and client, and kept in step with
+// db/migrations/001_admin_panel.sql and 003_view_3d_module.sql (tests/unit.test.mjs compares them).
 export const MODULES = [
   {
     slug: 'overview', name: 'Overview', identifier: 'CORE', route: '/',
@@ -105,6 +105,21 @@ export const MODULES = [
       ['fuel-savings', 'Fuel, CO₂ and savings'],
       ['ambulance-wave', 'Ambulance green wave'],
       ['evaluator-qa', 'Evaluator Q&A'],
+    ],
+  },
+  {
+    slug: 'view-3d', name: '3D View', identifier: '3DV', route: '/3d-view',
+    sections: [
+      ['run-selector', 'Simulation run selector and start form'],
+      ['layer-vehicles', 'Moving vehicles layer'],
+      ['layer-signals', 'Traffic signals layer'],
+      ['layer-density', 'Traffic density layer'],
+      ['layer-heatmap', 'Congestion heatmap layer'],
+      ['layer-labels', 'Intersection identifiers layer'],
+      ['vehicle-inspector', 'Vehicle inspector and follow'],
+      ['intersection-inspector', 'Intersection inspector'],
+      ['playback-controls', 'Playback controls'],
+      ['performance-hud', 'Performance indicator'],
     ],
   },
 ];

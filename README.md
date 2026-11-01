@@ -47,7 +47,7 @@ See `docs/IMPLEMENTATION_STATUS.md` for what Phase 1 changed, measured results a
 Method: `docs/RESEARCH_METHODOLOGY.md`. Run `python -m experiments.tools.evaluate_matrix run --stage core --workers 4` (stages: core, ablation, emergency, mixed; check progress with `status`), then `python -m experiments.tools.analyze_evaluation`. The report goes to `experiments/reports/<matrix>/`. Results are preliminary until the matrix status shows every planned cell completed.
 
 ### Admin panel
-`/admin` turns the eight public modules and their sections on or off. Setup, environment variables and deployment: `docs/ADMIN_PANEL_DEPLOYMENT.md`. Tests: `cd frontend && npm run build && npm test`.
+`/admin` turns the nine public modules and their sections on or off. Setup, environment variables and deployment: `docs/ADMIN_PANEL_DEPLOYMENT.md`. Tests: `cd frontend && npm run build && npm test`.
 
 ## Research integrity
 The project does not ship fabricated KPI improvements. Research-paper percentages in the supplied report are scenario-specific literature results; this implementation is intended to measure its own SUMO results. Safety constraints take precedence over optimization.
