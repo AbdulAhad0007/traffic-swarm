@@ -39,12 +39,12 @@ function LookaheadDiagram() {
     <svg viewBox="0 0 660 215" className="explainer-svg" role="img" aria-label="Lookahead platoon timeline between two junctions">
       <defs>
         <linearGradient id="exRoadGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1e293b" />
-          <stop offset="100%" stopColor="#0f172a" />
+          <stop offset="0%" stopColor="var(--bg-elevated)" />
+          <stop offset="100%" stopColor="var(--bg-surface)" />
         </linearGradient>
         <linearGradient id="exPlatoonGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#fbbf24" />
-          <stop offset="100%" stopColor="#f59e0b" />
+          <stop offset="0%" stopColor="var(--status-warn)" />
+          <stop offset="100%" stopColor="var(--status-warn)" />
         </linearGradient>
         <filter id="exGlowCyan" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="3" result="blur" />
@@ -54,65 +54,65 @@ function LookaheadDiagram() {
           </feMerge>
         </filter>
         <marker id="exArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M0,1 L10,5 L0,9 z" fill="#38bdf8" />
+          <path d="M0,1 L10,5 L0,9 z" fill="var(--accent)" />
         </marker>
       </defs>
 
       {/* Road asphalt background */}
-      <rect x="50" y="78" width="560" height="36" rx="8" fill="url(#exRoadGrad)" stroke="#334155" strokeWidth="1.2" />
+      <rect x="50" y="78" width="560" height="36" rx="8" fill="url(#exRoadGrad)" stroke="var(--text-dim)" strokeWidth="1.2" />
       {/* Dashed highway center lane marking */}
-      <line x1="60" y1="96" x2="600" y2="96" stroke="#64748b" strokeWidth="2" strokeDasharray="12 10" />
+      <line x1="60" y1="96" x2="600" y2="96" stroke="var(--text-muted)" strokeWidth="2" strokeDasharray="12 10" />
 
       {/* Inter-junction digital communication wave (drawn behind badge) */}
-      <path d="M100,64 C230,16 430,16 560,64" fill="none" stroke="#38bdf8" strokeWidth="2.2" strokeDasharray="6 5" markerEnd="url(#exArrow)" filter="url(#exGlowCyan)" />
+      <path d="M100,64 C230,16 430,16 560,64" fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeDasharray="6 5" markerEnd="url(#exArrow)" filter="url(#exGlowCyan)" />
 
       {/* Solid Telemetry Packet Pill (opaque background prevents dashes passing through text) */}
       <g transform="translate(210, 10)">
-        <rect x="0" y="0" width="240" height="34" rx="17" fill="#0b1324" stroke="#38bdf8" strokeWidth="1.6" filter="url(#exGlowCyan)" />
-        <circle cx="16" cy="17" r="4.5" fill="#38bdf8" />
-        <text x="30" y="21" fill="#f8fafc" fontSize="11.5" fontWeight="700" fontFamily="var(--font-mono, monospace)">
-          alert: <tspan fill="#38bdf8">30 veh</tspan> · <tspan fill="#a855f7">ETA 18s</tspan>
+        <rect x="0" y="0" width="240" height="34" rx="17" fill="var(--bg-surface)" stroke="var(--accent)" strokeWidth="1.6" filter="url(#exGlowCyan)" />
+        <circle cx="16" cy="17" r="4.5" fill="var(--accent)" />
+        <text x="30" y="21" fill="var(--text-primary)" fontSize="11.5" fontWeight="700" fontFamily="var(--font-mono, monospace)">
+          alert: <tspan fill="var(--accent)">30 veh</tspan> · <tspan fill="var(--accent-3)">ETA 18s</tspan>
         </text>
       </g>
 
       {/* Moving platoon of vehicles */}
       {[165, 190, 215, 240, 265].map((x) => (
         <g key={x}>
-          <rect x={x} y="88" width="16" height="15" rx="3.5" fill="url(#exPlatoonGrad)" stroke="#d97706" strokeWidth="1" />
-          <rect x={x + 3} y="92" width="6" height="7" rx="1" fill="#78350f" opacity="0.6" />
+          <rect x={x} y="88" width="16" height="15" rx="3.5" fill="url(#exPlatoonGrad)" stroke="var(--status-warn)" strokeWidth="1" />
+          <rect x={x + 3} y="92" width="6" height="7" rx="1" fill="var(--status-warn)" opacity="0.6" />
         </g>
       ))}
-      <rect x="155" y="112" width="135" height="18" rx="4" fill="rgba(245,158,11,0.15)" stroke="rgba(245,158,11,0.4)" />
-      <text x="222" y="125" textAnchor="middle" fill="#fbbf24" fontSize="10.5" fontWeight="700">
+      <rect x="155" y="112" width="135" height="18" rx="4" fill="color-mix(in srgb, var(--status-warn) 15%, transparent)" stroke="color-mix(in srgb, var(--status-warn) 40%, transparent)" />
+      <text x="222" y="125" textAnchor="middle" fill="var(--status-warn)" fontSize="10.5" fontWeight="700">
         🚗 Coordinated Platoon
       </text>
 
       {/* Junction Nodes J1 and J2 */}
       <g transform="translate(85, 96)">
-        <circle cx="0" cy="0" r="25" fill="#070b14" stroke="#10b981" strokeWidth="3" filter="drop-shadow(0 0 8px rgba(16,185,129,0.5))" />
-        <text x="0" y="5" textAnchor="middle" fill="#f8fafc" fontSize="13" fontWeight="800" fontFamily="var(--font-mono, monospace)">J1</text>
-        <text x="0" y="44" textAnchor="middle" fill="#34d399" fontSize="12" fontWeight="700">Hapur Chungi</text>
-        <text x="0" y="58" textAnchor="middle" fill="#64748b" fontSize="10">Origin Junction</text>
+        <circle cx="0" cy="0" r="25" fill="var(--bg-sunken)" stroke="var(--status-ok)" strokeWidth="3" filter="drop-shadow(0 0 8px color-mix(in srgb, var(--status-ok) 50%, transparent))" />
+        <text x="0" y="5" textAnchor="middle" fill="var(--text-primary)" fontSize="13" fontWeight="800" fontFamily="var(--font-mono, monospace)">J1</text>
+        <text x="0" y="44" textAnchor="middle" fill="var(--status-ok)" fontSize="12" fontWeight="700">Hapur Chungi</text>
+        <text x="0" y="58" textAnchor="middle" fill="var(--text-muted)" fontSize="10">Origin Junction</text>
       </g>
 
       <g transform="translate(575, 96)">
-        <circle cx="0" cy="0" r="25" fill="#070b14" stroke="#f59e0b" strokeWidth="3" filter="drop-shadow(0 0 8px rgba(245,158,11,0.5))" />
-        <text x="0" y="5" textAnchor="middle" fill="#f8fafc" fontSize="13" fontWeight="800" fontFamily="var(--font-mono, monospace)">J2</text>
-        <text x="0" y="44" textAnchor="middle" fill="#fbbf24" fontSize="12" fontWeight="700">Old Bus Stand</text>
-        <text x="0" y="58" textAnchor="middle" fill="#64748b" fontSize="10">Downstream Agent</text>
+        <circle cx="0" cy="0" r="25" fill="var(--bg-sunken)" stroke="var(--status-warn)" strokeWidth="3" filter="drop-shadow(0 0 8px color-mix(in srgb, var(--status-warn) 50%, transparent))" />
+        <text x="0" y="5" textAnchor="middle" fill="var(--text-primary)" fontSize="13" fontWeight="800" fontFamily="var(--font-mono, monospace)">J2</text>
+        <text x="0" y="44" textAnchor="middle" fill="var(--status-warn)" fontSize="12" fontWeight="700">Old Bus Stand</text>
+        <text x="0" y="58" textAnchor="middle" fill="var(--text-muted)" fontSize="10">Downstream Agent</text>
       </g>
 
       {/* Timeline bottom bar */}
-      <line x1="85" y1="184" x2="575" y2="184" stroke="#334155" strokeWidth="2" strokeDasharray="4 4" />
+      <line x1="85" y1="184" x2="575" y2="184" stroke="var(--text-dim)" strokeWidth="2" strokeDasharray="4 4" />
       {[
         { x: 85, t: 't = 0s', desc: 'Cleared J1 → alert sent' },
         { x: 330, t: 't = 1s', desc: 'J2 plans 14s green window' },
         { x: 575, t: 't = 18s', desc: 'Platoon glides on green' }
       ].map(pt => (
         <g key={pt.x} transform={`translate(${pt.x}, 184)`}>
-          <circle cx="0" cy="0" r="5" fill="#38bdf8" stroke="#070b14" strokeWidth="2" />
-          <text x="0" y="16" textAnchor="middle" fill="#38bdf8" fontSize="11" fontWeight="700" fontFamily="var(--font-mono, monospace)">{pt.t}</text>
-          <text x="0" y="27" textAnchor="middle" fill="#94a3b8" fontSize="10">{pt.desc}</text>
+          <circle cx="0" cy="0" r="5" fill="var(--accent)" stroke="var(--bg-sunken)" strokeWidth="2" />
+          <text x="0" y="16" textAnchor="middle" fill="var(--accent)" fontSize="11" fontWeight="700" fontFamily="var(--font-mono, monospace)">{pt.t}</text>
+          <text x="0" y="27" textAnchor="middle" fill="var(--text-secondary)" fontSize="10">{pt.desc}</text>
         </g>
       ))}
     </svg>
@@ -124,51 +124,51 @@ function PheromoneDiagram() {
     <svg viewBox="0 0 660 160" className="explainer-svg" role="img" aria-label="Pheromone-weighted axis pressure">
       <defs>
         <linearGradient id="exPheroNS" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#10b981" />
-          <stop offset="100%" stopColor="#34d399" />
+          <stop offset="0%" stopColor="var(--status-ok)" />
+          <stop offset="100%" stopColor="var(--status-ok)" />
         </linearGradient>
         <linearGradient id="exPheroEW" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#0284c7" />
-          <stop offset="100%" stopColor="#38bdf8" />
+          <stop offset="0%" stopColor="var(--accent)" />
+          <stop offset="100%" stopColor="var(--accent)" />
         </linearGradient>
       </defs>
 
       {/* Pheromone Levels Left Side */}
       <g transform="translate(24, 22)">
-        <text x="0" y="0" fill="#94a3b8" fontSize="11" fontWeight="700" style={{ letterSpacing: "0.05em" }}>DIGITAL PHEROMONE CONCENTRATION (τ)</text>
+        <text x="0" y="0" fill="var(--text-secondary)" fontSize="11" fontWeight="700" style={{ letterSpacing: "0.05em" }}>DIGITAL PHEROMONE CONCENTRATION (τ)</text>
 
         {/* NS Corridor */}
-        <rect x="0" y="14" width="280" height="24" rx="6" fill="#111c2e" stroke="#1e293b" />
+        <rect x="0" y="14" width="280" height="24" rx="6" fill="var(--bg-surface)" stroke="var(--bg-elevated)" />
         <rect x="0" y="14" width="220" height="24" rx="6" fill="url(#exPheroNS)" />
-        <text x="10" y="30" fill="#042f1a" fontSize="12" fontWeight="800">τ NS: High Density Corridor (82%)</text>
+        <text x="10" y="30" fill="color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))" fontSize="12" fontWeight="800">τ NS: High Density Corridor (82%)</text>
 
         {/* EW Corridor */}
-        <rect x="0" y="46" width="280" height="24" rx="6" fill="#111c2e" stroke="#1e293b" />
+        <rect x="0" y="46" width="280" height="24" rx="6" fill="var(--bg-surface)" stroke="var(--bg-elevated)" />
         <rect x="0" y="46" width="85" height="24" rx="6" fill="url(#exPheroEW)" />
-        <text x="10" y="62" fill="#032030" fontSize="12" fontWeight="800">τ EW: Moderate (28%)</text>
+        <text x="10" y="62" fill="var(--bg-surface)" fontSize="12" fontWeight="800">τ EW: Moderate (28%)</text>
 
         {/* Update Rule Formula */}
-        <rect x="0" y="80" width="280" height="34" rx="6" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" />
-        <text x="10" y="96" fill="#38bdf8" fontSize="10.5" fontFamily="var(--font-mono, monospace)" fontWeight="600">τ ← (1 − 0.02)·τ + 0.1 · served</text>
-        <text x="10" y="108" fill="#64748b" fontSize="9.5">Evaporates 2%/s · Reinforced per served vehicle</text>
+        <rect x="0" y="80" width="280" height="34" rx="6" fill="color-mix(in srgb, var(--text-primary) 3%, transparent)" stroke="color-mix(in srgb, var(--text-primary) 8%, transparent)" />
+        <text x="10" y="96" fill="var(--accent)" fontSize="10.5" fontFamily="var(--font-mono, monospace)" fontWeight="600">τ ← (1 − 0.02)·τ + 0.1 · served</text>
+        <text x="10" y="108" fill="var(--text-muted)" fontSize="9.5">Evaporates 2%/s · Reinforced per served vehicle</text>
       </g>
 
       {/* Decision Formulas Right Side */}
       <g transform="translate(340, 22)">
-        <text x="0" y="0" fill="#94a3b8" fontSize="11" fontWeight="700" style={{ letterSpacing: "0.05em" }}>DYNAMIC AXIS PRESSURE WEIGHTING</text>
+        <text x="0" y="0" fill="var(--text-secondary)" fontSize="11" fontWeight="700" style={{ letterSpacing: "0.05em" }}>DYNAMIC AXIS PRESSURE WEIGHTING</text>
 
         <g transform="translate(0, 14)">
-          <rect x="0" y="0" width="295" height="100" rx="8" fill="rgba(168,85,247,0.06)" stroke="rgba(168,85,247,0.25)" />
-          <text x="14" y="24" fill="#e9d5ff" fontSize="11" fontFamily="var(--font-mono, monospace)">
+          <rect x="0" y="0" width="295" height="100" rx="8" fill="color-mix(in srgb, var(--accent-3) 6%, transparent)" stroke="color-mix(in srgb, var(--accent-3) 25%, transparent)" />
+          <text x="14" y="24" fill="var(--accent-3-soft)" fontSize="11" fontFamily="var(--font-mono, monospace)">
             w_axis = 0.8 + 0.4 · (τ_axis / Σ τ)
           </text>
-          <text x="14" y="46" fill="#f8fafc" fontSize="11" fontFamily="var(--font-mono, monospace)">
+          <text x="14" y="46" fill="var(--text-primary)" fontSize="11" fontFamily="var(--font-mono, monospace)">
             P_axis = (queue + ½ · announced) · w_axis
           </text>
-          <text x="14" y="68" fill="#34d399" fontSize="11" fontFamily="var(--font-mono, monospace)" fontWeight="700">
+          <text x="14" y="68" fill="var(--status-ok)" fontSize="11" fontFamily="var(--font-mono, monospace)" fontWeight="700">
             Switch if: P_red &gt; 1.5 · P_green + 3
           </text>
-          <text x="14" y="88" fill="#94a3b8" fontSize="10">
+          <text x="14" y="88" fill="var(--text-secondary)" fontSize="10">
             Busy corridors automatically gain weight for continuous green waves.
           </text>
         </g>
@@ -202,7 +202,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
         <header className="explainer-head">
           <div className="explainer-head-left">
             <span className="explainer-eyebrow">
-              <Brain size={14} color="#38bdf8" />
+              <Brain size={14} color="var(--accent)" />
               HOW IT WORKS · CONCEPT &amp; ALGORITHM STORY
             </span>
             <h2 id="explainer-title">
@@ -221,7 +221,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
               <div className="card-badge-row">
                 <span className="card-badge red">STATIC BASELINE</span>
               </div>
-              <h3><Monitor size={17} color="#f43f5e" /> Traditional Fixed Timer</h3>
+              <h3><Monitor size={17} color="var(--status-danger)" /> Traditional Fixed Timer</h3>
               <ul className="explainer-list">
                 <li><b>Fixed 30s cycle:</b> 30 seconds green per direction, every cycle, regardless of traffic backlog.</li>
                 <li><b>Dead-green waste:</b> Green continues running over empty pavement while cross-streets build up long queues.</li>
@@ -234,7 +234,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
               <div className="card-badge-row">
                 <span className="card-badge green">DISTRIBUTED MULTI-AGENT</span>
               </div>
-              <h3><Brain size={17} color="#10b981" /> Swarm JunctionAgents</h3>
+              <h3><Brain size={17} color="var(--status-ok)" /> Swarm JunctionAgents</h3>
               <ul className="explainer-list">
                 <li><b>Autonomous agents:</b> Each intersection is a self-governing agent with zero central point of failure.</li>
                 <li><b>Lookahead sensory horizon:</b> Monitors local queue pressure and listens to arrival alerts broadcast by neighbors.</li>
@@ -246,7 +246,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
 
           {/* Lookahead Platooning Section */}
           {on('lookahead') && <section>
-            <h3 className="explainer-h"><Radio size={16} color="#38bdf8" /> Lookahead Platooning (The &quot;Hapur Chungi&quot; Idea)</h3>
+            <h3 className="explainer-h"><Radio size={16} color="var(--accent)" /> Lookahead Platooning (The &quot;Hapur Chungi&quot; Idea)</h3>
             <LookaheadDiagram />
             
             <div className="explainer-packet-card">
@@ -267,7 +267,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
   "target_speed_kmh": 42
 }`}</code>
               </pre>
-              <p className="explainer-p" style={{ margin: '8px 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              <p className="explainer-p" style={{ margin: '8px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
                 💡 <b>J2 receives this before vehicles physically arrive</b> and coordinates an adaptive green window tailored to the platoon spread plus a 3-second safety clearance.
               </p>
             </div>
@@ -275,7 +275,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
 
           {/* Architecture Flow */}
           {on('architecture-flow') && <section>
-            <h3 className="explainer-h"><Monitor size={16} color="#a855f7" /> Display vs. Decentralized Decision Making</h3>
+            <h3 className="explainer-h"><Monitor size={16} color="var(--accent-3)" /> Display vs. Decentralized Decision Making</h3>
             <div className="explainer-flow">
               <div>
                 <b>Local Sensors</b>
@@ -304,7 +304,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
 
           {/* ACO Pheromone Corridor Weighting */}
           {on('aco-weighting') && <section>
-            <h3 className="explainer-h"><Brain size={16} color="#10b981" /> ACO Pheromone Corridor Weighting</h3>
+            <h3 className="explainer-h"><Brain size={16} color="var(--status-ok)" /> ACO Pheromone Corridor Weighting</h3>
             <PheromoneDiagram />
             <ol className="explainer-rules">
               {RULES.map(([t, d]) => (
@@ -318,7 +318,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
           {/* Fuel & Ambulance Impact */}
           {(on('fuel-savings') || on('ambulance-wave')) && <section className="explainer-compare">
             {on('fuel-savings') && <div className="explainer-card">
-              <h3><Fuel size={16} color="#c084fc" /> Fuel, CO₂ &amp; Economic Savings</h3>
+              <h3><Fuel size={16} color="var(--accent-3-soft)" /> Fuel, CO₂ &amp; Economic Savings</h3>
               <ul className="explainer-list">
                 <li><b>Idling baseline:</b> {FUEL.car_idle_lph} L/h per passenger car, {FUEL.heavy_idle_lph} L/h per heavy commercial vehicle.</li>
                 <li><code>litres = Σ idle_seconds_saved × rate / 3600</code></li>
@@ -327,7 +327,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
               </ul>
             </div>}
             {on('ambulance-wave') && <div className="explainer-card">
-              <h3><Siren size={16} color="#f43f5e" /> Ambulance Emergency Green Wave</h3>
+              <h3><Siren size={16} color="var(--status-danger)" /> Ambulance Emergency Green Wave</h3>
               <ul className="explainer-list">
                 <li><b>Early corridor preemption:</b> Broadcast along the whole corridor immediately upon siren detection.</li>
                 <li><b>Pre-arrival phase locking:</b> Intersections transition safely (Yellow → All-Red → Corridor Green) 15s before arrival.</li>
@@ -339,7 +339,7 @@ export default function SwarmExplainerModal({ open: requested, onClose }) {
 
           {/* FAQ / Evaluator Answers */}
           {on('evaluator-qa') && <section>
-            <h3 className="explainer-h"><MessageSquareQuote size={16} color="#38bdf8" /> Ready Answers for Project Evaluators &amp; Defense</h3>
+            <h3 className="explainer-h"><MessageSquareQuote size={16} color="var(--accent)" /> Ready Answers for Project Evaluators &amp; Defense</h3>
             <dl className="explainer-qa">
               {QA.map(([q, a]) => (
                 <div key={q}>

@@ -29,6 +29,7 @@ import SwarmTerminal from '@/components/SwarmTerminal';
 import SwarmImpactPanel from '@/components/SwarmImpactPanel';
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
 import { useSections } from '@/components/SiteConfigProvider';
+import { useThemeTokens } from '@/lib/themeClient';
 import { SUPPORTED_CITIES } from '@/lib/cityData';
 import { LookaheadDemo, SWARM, FIXED, FUEL, shortName } from '@/lib/swarmMesh';
 import { lab } from '@/lib/api';
@@ -41,6 +42,8 @@ import {
 
 const LAB_MAX_KM2 = 3.9;  // experiments/lab/osm_areas.py simulates at most 4 km^2 per area
 
+const CANVAS_TOKENS = ['--status-warn', '--accent', '--accent-soft', '--danger-soft', '--signal-red', '--text-primary'];
+const MAP_BASE_TOKEN = ['--map-base'];
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
 const ESRI_ATTR = 'Tiles © Esri';
 
@@ -98,7 +101,7 @@ const RADIUS_OPTIONS = [
 
 const WARMUP_S = 90;          // simulated seconds run before the first frame so the map starts populated
 const SPEEDS = [1, 2, 4];
-const PHASE_COLOR = { G: '#10b981', Y: '#f59e0b', R: '#f43f5e' };
+const PHASE_COLOR = { G: 'var(--status-ok)', Y: 'var(--status-warn)', R: 'var(--status-danger)' };
 const DECISION_TEXT = {
   platoon_hold: 'Holding green for announced platoon',
   empty_green: 'Dead green eliminated',
@@ -224,6 +227,10 @@ export default function OsmSignalMap() {
   const canSendToLab = on('send-to-lab') && sectionOn('live-lab', 'real-world-areas');
   const mapContainerRef = useRef(null);
   const fxCanvasRef = useRef(null);
+  // Canvas cannot read var(): the draw loop reads resolved colors, so a theme change never restarts the simulation.
+  const canvasColors = useThemeTokens(CANVAS_TOKENS);
+  const canvasColorsRef = useRef(canvasColors);
+  canvasColorsRef.current = canvasColors;
   const leafletMapRef = useRef(null);
   const markersRef = useRef([]);
   const headsLayerRef = useRef(null);
@@ -248,7 +255,10 @@ export default function OsmSignalMap() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState(null);
-  const [mapView, setMapView] = useState('dark');
+  // The base map follows the theme until the visitor picks one.
+  const [pickedView, setMapView] = useState(null);
+  const mapBase = useThemeTokens(MAP_BASE_TOKEN)['--map-base'];
+  const mapView = pickedView ?? (mapBase === 'light' ? 'street' : 'dark');
   const [activeMode, setActiveMode] = useState(SWARM);
   const [showLinks, setShowLinks] = useState(true);
   const [showFlow, setShowFlow] = useState(true);
@@ -443,7 +453,7 @@ export default function OsmSignalMap() {
     const bounds = L.latLngBounds([bbox.south, bbox.west], [bbox.north, bbox.east]);
     areaLayerRef.current?.remove();
     areaLayerRef.current = L.rectangle(bounds, {
-      color: '#38bdf8', weight: 1.5, dashArray: '8, 6', fill: true, fillColor: '#38bdf8', fillOpacity: 0.03, interactive: false,
+      color: 'var(--accent)', weight: 1.5, dashArray: '8, 6', fill: true, fillColor: 'var(--accent)', fillOpacity: 0.03, interactive: false,
     }).addTo(map);
     if (area.source !== 'view') {
       const wide = window.matchMedia('(min-width: 901px)').matches;
@@ -463,7 +473,7 @@ export default function OsmSignalMap() {
     const isSwarm = activeMode === SWARM;
     edges.forEach(([i, k]) => {
       roadsRef.current.push(L.polyline(data.paths.get(`${i}>${k}`), {
-        color: isSwarm ? '#0284c7' : '#64748b', weight: isSwarm ? 5 : 4, opacity: isSwarm ? 0.6 : 0.45, interactive: false,
+        color: isSwarm ? 'var(--accent)' : 'var(--text-muted)', weight: isSwarm ? 5 : 4, opacity: isSwarm ? 0.6 : 0.45, interactive: false,
       }).addTo(map));
     });
   }, [data, edges, showLinks, activeMode, mapReady]);
@@ -477,7 +487,7 @@ export default function OsmSignalMap() {
     headsLayerRef.current = null;
     if (!junctions.length) return;
     headsLayerRef.current = L.layerGroup(junctions.flatMap(j => j.signals.map(s => L.circleMarker([s.lat, s.lon], {
-      radius: 3, color: '#fde68a', weight: 1, fillColor: '#f59e0b', fillOpacity: 0.95, interactive: false,
+      radius: 3, color: 'var(--warn-soft)', weight: 1, fillColor: 'var(--status-warn)', fillOpacity: 0.95, interactive: false,
     })))).addTo(map);
   }, [junctions, mapReady]);
 
@@ -572,8 +582,8 @@ export default function OsmSignalMap() {
     const L = require('leaflet');
     const pts = routePath(emRoute);
     routeLayersRef.current = [
-      L.polyline(pts, { color: '#ef4444', weight: 16, opacity: 0.35, className: 'em-route-glow', interactive: false }).addTo(map),
-      L.polyline(pts, { color: '#ffffff', weight: 3, opacity: 0.95, dashArray: '10 10', className: 'em-route-dash', interactive: false }).addTo(map),
+      L.polyline(pts, { color: 'var(--signal-red)', weight: 16, opacity: 0.35, className: 'em-route-glow', interactive: false }).addTo(map),
+      L.polyline(pts, { color: 'var(--text-primary)', weight: 3, opacity: 0.95, dashArray: '10 10', className: 'em-route-dash', interactive: false }).addTo(map),
     ];
   }, [emRoute, demo, routePath, mapReady]);
 
@@ -624,23 +634,23 @@ export default function OsmSignalMap() {
         <div class="hover-grid-stats">
           <div class="hover-stat-box">
             <span class="hover-stat-lbl">Halting Queue</span>
-            <span class="hover-stat-val" style="color:${v.queue > 4 ? '#ef4444' : v.queue > 1 ? '#f59e0b' : '#34d399'}">
-              ${v.queue} <span style="font-size:10px;font-weight:500;color:#94a3b8">veh</span>
+            <span class="hover-stat-val" style="color:${v.queue > 4 ? 'var(--signal-red)' : v.queue > 1 ? 'var(--status-warn)' : 'var(--status-ok)'}">
+              ${v.queue} <span style="font-size:10px;font-weight:500;color:var(--text-secondary)">veh</span>
             </span>
             <span class="hover-stat-sub">NS ${v.queueNS} · EW ${v.queueEW} (vs ${o.queue} ${isSwarm ? 'fixed' : 'swarm'})</span>
           </div>
 
           <div class="hover-stat-box">
             <span class="hover-stat-lbl">Clearance Flow</span>
-            <span class="hover-stat-val" style="color:#10b981">
-              ${v.carsPerMin} <span style="font-size:10px;font-weight:500;color:#94a3b8">veh/min</span>
+            <span class="hover-stat-val" style="color:var(--status-ok)">
+              ${v.carsPerMin} <span style="font-size:10px;font-weight:500;color:var(--text-secondary)">veh/min</span>
             </span>
             <span class="hover-stat-sub">Active throughput</span>
           </div>
 
           <div class="hover-stat-box">
             <span class="hover-stat-lbl">Green Allocation</span>
-            <span class="hover-stat-val" style="color:#38bdf8;font-size:11.5px">
+            <span class="hover-stat-val" style="color:var(--accent);font-size:11.5px">
               ${isSwarm ? `NS ${lg('NS')} / EW ${lg('EW')}` : '30s / 30s'}
             </span>
             <span class="hover-stat-sub">${isSwarm ? 'Dynamic demand allocation' : 'Fixed static cycle'}</span>
@@ -648,15 +658,15 @@ export default function OsmSignalMap() {
 
           <div class="hover-stat-box">
             <span class="hover-stat-lbl">Fuel & Cost Saved</span>
-            <span class="hover-stat-val" style="color:#c084fc">
-              ${v.fuelSaved.toFixed(3)} L <span style="font-size:11px;color:#facc15">· ₹${rupees.toFixed(1)}</span>
+            <span class="hover-stat-val" style="color:var(--accent-3-soft)">
+              ${v.fuelSaved.toFixed(3)} L <span style="font-size:11px;color:var(--status-warn)">· ₹${rupees.toFixed(1)}</span>
             </span>
             <span class="hover-stat-sub">vs baseline fixed timer</span>
           </div>
 
           <div class="hover-stat-box hover-stat-full">
             <span class="hover-stat-lbl">Incoming Platoon</span>
-            <span class="hover-stat-val" style="font-size:11.5px;color:${inc ? '#38bdf8' : '#94a3b8'}">
+            <span class="hover-stat-val" style="font-size:11.5px;color:${inc ? 'var(--accent)' : 'var(--text-secondary)'}">
               ${isSwarm
                 ? (inc ? `▲ ${inc.size} veh arriving in ${inc.eta}s from ${esc(inc.from)}` : 'None announced · Normal flow')
                 : 'No inter-junction communication'}
@@ -729,6 +739,7 @@ export default function OsmSignalMap() {
         cv.width = Math.round(w * dpr);
         cv.height = Math.round(h * dpr);
       }
+      const C = canvasColorsRef.current;
       const ctx = cv.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
@@ -745,7 +756,7 @@ export default function OsmSignalMap() {
       };
 
       if (showFlow) {
-        ctx.fillStyle = '#fbbf24';
+        ctx.fillStyle = C['--status-warn'];
         demo.transitGroups(activeMode, frac).forEach(g => {
           const p = along(linkPts(g.from, g.to), g.frac, 5);
           ctx.beginPath();
@@ -763,24 +774,24 @@ export default function OsmSignalMap() {
           const em = p.kind === 'emergency';
           const pos = along(linkPts(p.from, p.to), f, em ? 0 : 5);
           const trail = ctx.createLinearGradient(pos.x - pos.ux * 34, pos.y - pos.uy * 34, pos.x, pos.y);
-          trail.addColorStop(0, 'rgba(34,211,238,0)');
-          trail.addColorStop(1, em ? 'rgba(248,113,113,0.9)' : 'rgba(34,211,238,0.9)');
+          trail.addColorStop(0, `color-mix(in srgb, ${C['--accent']} 0%, transparent)`);
+          trail.addColorStop(1, em ? `color-mix(in srgb, ${C['--danger-soft']} 90%, transparent)` : `color-mix(in srgb, ${C['--accent']} 90%, transparent)`);
           ctx.strokeStyle = trail;
           ctx.lineWidth = 3;
           ctx.beginPath();
           ctx.moveTo(pos.x - pos.ux * 34, pos.y - pos.uy * 34);
           ctx.lineTo(pos.x, pos.y);
           ctx.stroke();
-          ctx.shadowColor = em ? '#ef4444' : '#22d3ee';
+          ctx.shadowColor = em ? C['--signal-red'] : C['--accent'];
           ctx.shadowBlur = 14;
-          ctx.fillStyle = em ? (Math.floor(nowMs / 150) % 2 ? '#ffffff' : '#ef4444') : '#a5f3fc';
+          ctx.fillStyle = em ? (Math.floor(nowMs / 150) % 2 ? C['--text-primary'] : C['--signal-red']) : C['--accent-soft'];
           ctx.beginPath();
           ctx.arc(pos.x, pos.y, em ? 5.5 : 4.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
           if (!em && p.size >= 3) {
             ctx.font = '600 10px "JetBrains Mono", monospace';
-            ctx.fillStyle = '#cffafe';
+            ctx.fillStyle = C['--accent-soft'];
             ctx.fillText(`${p.size}`, pos.x + 7, pos.y - 6);
           }
         });
@@ -804,12 +815,12 @@ export default function OsmSignalMap() {
           waiting = f >= 1;
         }
         const pulse = 11 + 4 * Math.sin(nowMs / 160);
-        ctx.strokeStyle = 'rgba(239,68,68,0.8)';
+        ctx.strokeStyle = `color-mix(in srgb, ${C['--signal-red']} 80%, transparent)`;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(p.x, p.y, pulse, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.fillStyle = Math.floor(nowMs / 250) % 2 ? '#ef4444' : '#ffffff';
+        ctx.fillStyle = Math.floor(nowMs / 250) % 2 ? C['--signal-red'] : C['--text-primary'];
         ctx.beginPath();
         ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
         ctx.fill();
@@ -818,7 +829,7 @@ export default function OsmSignalMap() {
         ctx.fillText('🚑', p.x, p.y - 14);
         if (waiting) {
           ctx.font = '700 10px "JetBrains Mono", monospace';
-          ctx.fillStyle = '#fca5a5';
+          ctx.fillStyle = C['--danger-soft'];
           ctx.fillText(`STOPPED AT RED · ${amb.delay}s`, p.x, p.y + 24);
         }
         ctx.textAlign = 'start';
@@ -968,17 +979,17 @@ export default function OsmSignalMap() {
         <div className="toolbar" style={{ flexWrap: 'wrap', gap: 14, justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 340px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span className="badge live" style={{ background: '#10b981', color: '#022c22' }}>
+              <span className="badge live" style={{ background: 'var(--status-ok)', color: 'color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))' }}>
                 ● {area.name.toUpperCase()} · REAL OSM SIGNALS
               </span>
-              <span className="status" style={{ fontSize: 11, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+              <span className="status" style={{ fontSize: 11, background: 'color-mix(in srgb, var(--accent) 15%, transparent)', color: 'var(--accent)' }}>
                 {data ? `${junctions.length} signalised JunctionAgents` : net.status === 'loading' ? 'loading signals…' : 'no signals loaded'}
               </span>
               {moduleOn('how-it-works') && <button className="explainer-open-btn" onClick={() => setExplainerOpen(true)}>
                 <BookOpen size={14} /> How Swarm Intelligence Works
               </button>}
             </div>
-            <h2 style={{ marginTop: 6, marginBottom: 4, fontSize: '1.5rem', color: '#f1f5f9' }}>
+            <h2 style={{ marginTop: 6, marginBottom: 4, fontSize: '1.5rem', color: 'var(--text-primary)' }}>
               Real traffic signals, anywhere in the world
             </h2>
             <p className="muted small" style={{ margin: 0 }}>
@@ -1030,7 +1041,7 @@ export default function OsmSignalMap() {
 
         {on('place-search') && <form onSubmit={handleSearchLocation} className="gzb-search-row">
           <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-            <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: '#94a3b8' }} />
+            <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: 'var(--text-secondary)' }} />
             <input
               type="text"
               placeholder="Search any place (e.g. Silk Board Bengaluru, Connaught Place, Times Square)…"
@@ -1147,13 +1158,13 @@ export default function OsmSignalMap() {
       </div>}
 
       {on('map-legend') && <div className="map-legend">
-        <span><i style={{ background: '#f59e0b', boxShadow: '0 0 0 1px #fde68a' }} /> OSM signal head (exact)</span>
-        <span><i style={{ background: '#a5f3fc', boxShadow: '0 0 8px #22d3ee' }} /> platoon alert packet</span>
-        <span><i style={{ background: '#fbbf24' }} /> vehicles in transit (simulated)</span>
-        <span><i style={{ background: '#10b981' }} /> green</span>
-        <span><i style={{ background: '#f59e0b' }} /> yellow</span>
-        <span><i style={{ background: '#f43f5e' }} /> red / all-red</span>
-        <span className="legend-q">network queue: <b style={{ color: isSwarm ? '#10b981' : '#f43f5e' }}>{queueTotal}</b> veh (other mode {queueOther})</span>
+        <span><i style={{ background: 'var(--status-warn)', boxShadow: '0 0 0 1px var(--warn-soft)' }} /> OSM signal head (exact)</span>
+        <span><i style={{ background: 'var(--accent-soft)', boxShadow: '0 0 8px var(--accent)' }} /> platoon alert packet</span>
+        <span><i style={{ background: 'var(--status-warn)' }} /> vehicles in transit (simulated)</span>
+        <span><i style={{ background: 'var(--status-ok)' }} /> green</span>
+        <span><i style={{ background: 'var(--status-warn)' }} /> yellow</span>
+        <span><i style={{ background: 'var(--status-danger)' }} /> red / all-red</span>
+        <span className="legend-q">network queue: <b style={{ color: isSwarm ? 'var(--status-ok)' : 'var(--status-danger)' }}>{queueTotal}</b> veh (other mode {queueOther})</span>
       </div>}
 
       {net.stage === 'roads' && (
@@ -1178,7 +1189,7 @@ export default function OsmSignalMap() {
 
       {/* The Leaflet container stays mounted while the map is off, so turning it back on keeps the simulation */}
       <div className={`gzb-map-wrap ${mapOn ? '' : 'map-off'}`}>
-        <div ref={mapContainerRef} className="gzb-map-canvas" style={{ background: '#090e18' }} />
+        <div ref={mapContainerRef} className="gzb-map-canvas" style={{ background: 'var(--bg-sunken)' }} />
         {mapOn && <canvas ref={fxCanvasRef} className="map-fx-canvas" aria-hidden="true" />}
 
         {mapOn && net.status === 'loading' && (
@@ -1243,12 +1254,12 @@ export default function OsmSignalMap() {
               </div>
             </div>
             <div className="pill-stats">
-              <div><span>Cars passing (sim)</span><b style={{ color: '#10b981' }}>{selV.carsPerMin} veh/min</b></div>
-              <div><span>Queued (sim)</span><b style={{ color: '#38bdf8' }}>{selV.queue} veh</b></div>
-              <div><span>Incoming</span><b style={{ color: '#22d3ee' }}>
+              <div><span>Cars passing (sim)</span><b style={{ color: 'var(--status-ok)' }}>{selV.carsPerMin} veh/min</b></div>
+              <div><span>Queued (sim)</span><b style={{ color: 'var(--accent)' }}>{selV.queue} veh</b></div>
+              <div><span>Incoming</span><b style={{ color: 'var(--accent)' }}>
                 {isSwarm ? (selV.incoming[0] ? `${selV.incoming[0].size} veh in ${selV.incoming[0].eta}s` : '—') : 'no comms'}
               </b></div>
-              <div><span>Fuel saved here</span><b style={{ color: '#a855f7' }}>{selV.fuelSaved.toFixed(3)} L</b></div>
+              <div><span>Fuel saved here</span><b style={{ color: 'var(--accent-3)' }}>{selV.fuelSaved.toFixed(3)} L</b></div>
             </div>
           </div>
         )}

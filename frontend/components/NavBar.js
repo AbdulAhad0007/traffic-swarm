@@ -21,7 +21,7 @@ export default function NavBar() {
         const isActive = pathname === href;
         return (
           <Link key={href} href={href} className={isActive ? 'on' : ''}>
-            <Icon size={15} color={isActive ? '#38bdf8' : 'currentColor'} />
+            <Icon size={15} color={isActive ? 'var(--accent)' : 'currentColor'} />
             <span>{label}</span>
           </Link>
         );

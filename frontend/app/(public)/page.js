@@ -24,6 +24,7 @@ import {
 import { API, LAB, lab, fmt } from '@/lib/api';
 import FuelSavedCard from '@/components/FuelSavedCard';
 import RichDropdown from '@/components/RichDropdown';
+import JunctionMesh from '@/components/JunctionMesh';
 import { useSections } from '@/components/SiteConfigProvider';
 
 const RICH_SCENARIOS = [
@@ -76,7 +77,7 @@ const GRID_ARCHITECTURES = [
     description: 'The foundation research benchmark. 9 signalized intersections in a 3-row, 3-column mesh with 150m block lengths. Evaluates primary 4-way green wave coordination between cardinal neighbors.',
     highlight: 'Decentralized J1–J9 agents',
     badge: '9 AGENTS',
-    color: '#38bdf8',
+    color: 'var(--accent)',
   },
   {
     id: 'grid5x5',
@@ -85,7 +86,7 @@ const GRID_ARCHITECTURES = [
     description: 'Models a large urban district with 25 coordinated controllers. Evaluates multi-hop digital pheromone diffusion across 2-hop distances to suppress cascaded spillbacks before they paralyze upstream arterial corridors.',
     highlight: '2-hop pheromone diffusion',
     badge: '25 AGENTS',
-    color: '#10b981',
+    color: 'var(--status-ok)',
   },
   {
     id: 'grid9x9',
@@ -94,7 +95,7 @@ const GRID_ARCHITECTURES = [
     description: 'Metropolitan downtown scale with 81 autonomous agents. Solves the combinatorial explosion problem where centralized controllers fail, proving swarm intelligence scales in constant real-time latency.',
     highlight: 'True emergent coordination',
     badge: '81 AGENTS',
-    color: '#8b5cf6',
+    color: 'var(--accent-3)',
   },
   {
     id: 'grid5x5_india',
@@ -103,7 +104,7 @@ const GRID_ARCHITECTURES = [
     description: 'Realistic Indian urban conditions with Left-Hand Traffic (LHD), 2 lanes, pedestrian crosswalks, and mixed non-lane-based vehicle fleets (two-wheelers filtering through stopped queues, auto-rickshaws, buses).',
     highlight: 'Sublane motorcycle filtering',
     badge: 'MIXED MODES',
-    color: '#f59e0b',
+    color: 'var(--status-warn)',
   },
   {
     id: 'osm_ghaziabad',
@@ -112,7 +113,7 @@ const GRID_ARCHITECTURES = [
     description: 'Every node is a traffic light mapped in OpenStreetMap, linked only by the real roads between signals. Pick any place, watch the swarm mesh run on it, or send the area to the SUMO lab to simulate it.',
     highlight: 'Nodes only where real signals stand',
     badge: 'OSM',
-    color: '#f43f5e',
+    color: 'var(--status-danger)',
   },
 ];
 
@@ -246,23 +247,19 @@ export default function ExperimentsPage() {
 
   return (
     <>
-      {/* Overview Module Main Header */}
-      <header className="app-main-header">
-        <div>
-          <span className="eyebrow">
-            <span className="dot-pulse" />
-            AI SWARM INTELLIGENCE CORE · SUMO MICROSCOPIC SIMULATOR
-          </span>
+      {/* Always shown: section toggles control the KPI and run sections below it, not this hero. */}
+      <header className="app-main-header overview-hero">
+        <div className="overview-hero-text">
           <h1>Traffic Swarm Intelligence Lab</h1>
+          <p className="overview-hero-lede">AI swarm intelligence core on the SUMO microscopic simulator.</p>
           <p>Hybrid PSO + ACO Optimization · Multi-Agent Blackboard Coordination · Microscopic Real-Time SUMO Simulation</p>
-        </div>
-        <div className="header-meta-box">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span className="badge live">● SIMULATION READY</span>
-            <span className="status" style={{ fontSize: 11 }}>v1.3.2-eval</span>
+          <div className="overview-hero-meta">
+            <span className="badge live"><span className="dot-pulse" /> Simulation ready</span>
+            <span className="status">v1.3.2-eval</span>
+            <span className="muted">3×3 · 5×5 · 9×9 grids · any OpenStreetMap area</span>
           </div>
-          <span className="muted" style={{ fontSize: 12 }}>3×3 · 5×5 · 9×9 grids · any OpenStreetMap area</span>
         </div>
+        <JunctionMesh />
       </header>
 
       {/* Top Telemetry Cards */}
@@ -273,7 +270,7 @@ export default function ExperimentsPage() {
             <b>Simulation Engine</b>
             <p className="muted" style={{ margin: 0, fontSize: 11 }}>SUMO 1.27 + TraCI</p>
           </div>
-          <span style={{ color: labHealth === 'ONLINE' ? '#10b981' : '#f43f5e' }}>
+          <span style={{ color: labHealth === 'ONLINE' ? 'var(--status-ok)' : 'var(--status-danger)' }}>
             ● {labHealth}
           </span>
         </div>
@@ -284,7 +281,7 @@ export default function ExperimentsPage() {
             <b>Swarm Optimizer</b>
             <p className="muted" style={{ margin: 0, fontSize: 11 }}>Hybrid PSO + ACO</p>
           </div>
-          <span style={{ color: '#38bdf8' }}>PORT 8001 UP</span>
+          <span style={{ color: 'var(--accent)' }}>PORT 8001 UP</span>
         </div>
 
         <div className="card">
@@ -293,7 +290,7 @@ export default function ExperimentsPage() {
             <b>Safety Gate</b>
             <p className="muted" style={{ margin: 0, fontSize: 11 }}>Min-green & clearance</p>
           </div>
-          <span style={{ color: '#10b981' }}>HARD GATED</span>
+          <span style={{ color: 'var(--status-ok)' }}>HARD GATED</span>
         </div>
       </section>}
 
@@ -307,44 +304,44 @@ export default function ExperimentsPage() {
             marginBottom: 24,
           }}
         >
-          <div className="mini" style={{ borderLeft: '3px solid #10b981' }}>
+          <div className="mini" style={{ borderLeft: '3px solid var(--status-ok)' }}>
             <span className="muted" style={{ fontSize: 11 }}>MEAN DELAY REDUCTION</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <TrendingDown size={22} color="#10b981" />
-              <b style={{ fontSize: 24, color: '#10b981', fontFamily: 'var(--font-display)' }}>
+              <TrendingDown size={22} color="var(--status-ok)" />
+              <b style={{ fontSize: 24, color: 'var(--status-ok)', fontFamily: 'var(--font-display)' }}>
                 {fmt(kpiHighlights.delayImp, 1)}%
               </b>
             </div>
             <span className="muted" style={{ fontSize: 11 }}>vs Fixed-time baseline</span>
           </div>
 
-          <div className="mini" style={{ borderLeft: '3px solid #38bdf8' }}>
+          <div className="mini" style={{ borderLeft: '3px solid var(--accent)' }}>
             <span className="muted" style={{ fontSize: 11 }}>QUEUE LENGTH REDUCTION</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <TrendingDown size={22} color="#38bdf8" />
-              <b style={{ fontSize: 24, color: '#38bdf8', fontFamily: 'var(--font-display)' }}>
+              <TrendingDown size={22} color="var(--accent)" />
+              <b style={{ fontSize: 24, color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
                 {fmt(kpiHighlights.queueImp, 1)}%
               </b>
             </div>
             <span className="muted" style={{ fontSize: 11 }}>Less network backlog</span>
           </div>
 
-          <div className="mini" style={{ borderLeft: '3px solid #f59e0b' }}>
+          <div className="mini" style={{ borderLeft: '3px solid var(--status-warn)' }}>
             <span className="muted" style={{ fontSize: 11 }}>CO₂ EMISSIONS SAVINGS</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <Zap size={22} color="#f59e0b" />
-              <b style={{ fontSize: 24, color: '#f59e0b', fontFamily: 'var(--font-display)' }}>
+              <Zap size={22} color="var(--status-warn)" />
+              <b style={{ fontSize: 24, color: 'var(--status-warn)', fontFamily: 'var(--font-display)' }}>
                 {fmt(kpiHighlights.co2Imp, 1)}%
               </b>
             </div>
             <span className="muted" style={{ fontSize: 11 }}>Reduced idling stop/starts</span>
           </div>
 
-          <div className="mini" style={{ borderLeft: '3px solid #8b5cf6' }}>
+          <div className="mini" style={{ borderLeft: '3px solid var(--accent-3)' }}>
             <span className="muted" style={{ fontSize: 11 }}>STOPS PER VEHICLE</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-              <Gauge size={22} color="#8b5cf6" />
-              <b style={{ fontSize: 24, color: '#8b5cf6', fontFamily: 'var(--font-display)' }}>
+              <Gauge size={22} color="var(--accent-3)" />
+              <b style={{ fontSize: 24, color: 'var(--accent-3)', fontFamily: 'var(--font-display)' }}>
                 {fmt(kpiHighlights.stopsImp, 1)}%
               </b>
             </div>
@@ -377,7 +374,7 @@ export default function ExperimentsPage() {
               onClick={startQuickLabRun}
               style={{ whiteSpace: 'nowrap' }}
             >
-              <Play size={15} color="#38bdf8" />
+              <Play size={15} color="var(--accent)" />
               {running ? 'Launching...' : 'Run Live Simulation'}
             </button>
             <button onClick={load} title="Refresh telemetry" aria-label="Refresh telemetry">
@@ -400,7 +397,7 @@ export default function ExperimentsPage() {
         >
           {moduleOn('signal-map') && <Link href="/ghaziabad" className="mini feature-card-highlight" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b style={{ color: '#f43f5e', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <b style={{ color: 'var(--status-danger)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} /> Real-World Signal Map
               </b>
               <span className="badge live" style={{ fontSize: 10 }}>OSM</span>
@@ -412,8 +409,8 @@ export default function ExperimentsPage() {
 
           {moduleOn('live-lab') && <Link href="/live" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b style={{ color: '#38bdf8' }}>Live Heatmap & Control</b>
-              <ArrowRight size={16} color="#38bdf8" />
+              <b style={{ color: 'var(--accent)' }}>Live Heatmap & Control</b>
+              <ArrowRight size={16} color="var(--accent)" />
             </div>
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Watch signalized junctions adapt phase timings dynamically as queues form.
@@ -422,8 +419,8 @@ export default function ExperimentsPage() {
 
           {moduleOn('before-after') && <Link href="/demo" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b style={{ color: '#10b981' }}>Side-by-Side Dual Demo</b>
-              <ArrowRight size={16} color="#10b981" />
+              <b style={{ color: 'var(--status-ok)' }}>Side-by-Side Dual Demo</b>
+              <ArrowRight size={16} color="var(--status-ok)" />
             </div>
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Synchronized visual replay comparing Fixed-Time baseline against Swarm Intelligence.
@@ -432,8 +429,8 @@ export default function ExperimentsPage() {
 
           {moduleOn('controllers') && <Link href="/controllers" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <b style={{ color: '#f59e0b' }}>Controller Comparison</b>
-              <ArrowRight size={16} color="#f59e0b" />
+              <b style={{ color: 'var(--status-warn)' }}>Controller Comparison</b>
+              <ArrowRight size={16} color="var(--status-warn)" />
             </div>
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Statistical multi-seed evaluation across Actuated, Swarm, and Priority modes.
@@ -447,7 +444,7 @@ export default function ExperimentsPage() {
         <div className="toolbar" style={{ flexWrap: 'wrap', gap: 10 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Grid size={18} color="#38bdf8" />
+              <Grid size={18} color="var(--accent)" />
               <h2>Grid Architectures & What They Mean</h2>
             </div>
             <p className="muted">
@@ -478,12 +475,12 @@ export default function ExperimentsPage() {
             <div className="grid-arch-card" style={{ borderLeft: `4px solid ${sel.color}` }}>
               <div className="grid-card-top">
                 <div>
-                  <h3 style={{ margin: 0, color: '#f8fafc' }}>{sel.title}</h3>
+                  <h3 style={{ margin: 0, color: 'var(--text-primary)' }}>{sel.title}</h3>
                   <span className="scale-pill" style={{ color: sel.color }}>
                     {sel.scale}
                   </span>
                 </div>
-                <span className="badge" style={{ background: 'rgba(255,255,255,0.06)', color: '#f8fafc' }}>
+                <span className="badge" style={{ background: 'color-mix(in srgb, var(--text-primary) 6%, transparent)', color: 'var(--text-primary)' }}>
                   {sel.highlight}
                 </span>
               </div>
@@ -521,7 +518,7 @@ export default function ExperimentsPage() {
                 Direct comparison between Fixed-Time Baseline (Blue) and Swarm Intelligence (Green) under identical traffic demands.
               </p>
             </div>
-            <span className="status" style={{ color: '#10b981', marginLeft: 'auto' }}>
+            <span className="status" style={{ color: 'var(--status-ok)', marginLeft: 'auto' }}>
               SUMO VERIFIED · REAL RUN
             </span>
           </div>
@@ -541,8 +538,8 @@ export default function ExperimentsPage() {
                       </b>
                       <small>{m.lowerBetter ? 'lower is better' : 'higher is better'}</small>
                     </div>
-                    <div className="kpi-compare-bar"><span>Fixed-time</span><div><i style={{ width: `${(m.base / max) * 100}%`, background: '#38bdf8' }} /></div><b>{num(m.base)}</b></div>
-                    <div className="kpi-compare-bar"><span>Swarm</span><div><i style={{ width: `${(m.swarm / max) * 100}%`, background: '#10b981' }} /></div><b>{num(m.swarm)}</b></div>
+                    <div className="kpi-compare-bar"><span>Fixed-time</span><div><i style={{ width: `${(m.base / max) * 100}%`, background: 'var(--accent)' }} /></div><b>{num(m.base)}</b></div>
+                    <div className="kpi-compare-bar"><span>Swarm</span><div><i style={{ width: `${(m.swarm / max) * 100}%`, background: 'var(--status-ok)' }} /></div><b>{num(m.swarm)}</b></div>
                   </div>
                 );
               })}
@@ -562,7 +559,7 @@ export default function ExperimentsPage() {
           </div>}
 
           {on('benchmark-raw-json') && <details style={{ marginTop: 14 }}>
-            <summary style={{ cursor: 'pointer', color: '#94a3b8', fontSize: 13 }}>
+            <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 13 }}>
               View Raw Telemetry JSON
             </summary>
             <pre style={{ marginTop: 8 }}>
@@ -596,12 +593,12 @@ export default function ExperimentsPage() {
                   key={r.id}
                   onClick={() => setSelectedId(r.id)}
                 >
-                  <span style={{ fontWeight: 600, color: '#f8fafc' }}>
-                    <Network size={15} color="#38bdf8" />
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <Network size={15} color="var(--accent)" />
                     {r.id}
                   </span>
                   <span>
-                    <Clock3 size={14} color="#94a3b8" />
+                    <Clock3 size={14} color="var(--text-secondary)" />
                     {r.controllers?.join(' vs ') || 'eval run'}
                   </span>
                   <span>

@@ -5,6 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import { fmt } from '@/lib/api';
 import { useFullscreen } from '@/lib/usePanZoom';
 import { Globe2, MapPin, Maximize2, Minimize2, Crosshair } from 'lucide-react';
+import { useThemeTokens } from '@/lib/themeClient';
+
+const MAP_BASE_TOKEN = ['--map-base'];
 
 // Real world map (OpenStreetMap / Esri tiles) with the simulated network's congestion drawn as a
 // heatmap. A network imported from OpenStreetMap is geo-referenced: every traffic light is drawn at
@@ -41,7 +44,7 @@ function sev(j) {
   const q = j.queue || 0, occ = j.occupancy || 0;
   return q > 4 || occ > 0.4 ? 3 : q > 1 || occ > 0.2 ? 2 : 1;
 }
-const HEAT = ['#64748b', '#facc15', '#f97316', '#ef4444'];
+const HEAT = ['var(--text-muted)', 'var(--status-warn)', 'var(--status-warn)', 'var(--signal-red)'];
 const SEV_NAME = ['no data', 'free flow', 'moderate', 'heavy'];
 const RINGS = [[1.0, 0.18], [0.65, 0.3], [0.35, 0.5]];
 
@@ -59,27 +62,27 @@ const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 function tipHtml(node, j) {
   const s = sev(j);
   const real = node.lat != null
-    ? `<div class="world-tip-real">${node.streets?.length ? `<div style="font-weight:700;color:#f8fafc;font-size:13px;margin-bottom:2px;">${esc(node.streets.join(' × '))}</div>` : ''}`
-      + `<span style="color:#94a3b8;font-size:10.5px;">📍 Real Signal Head · ${node.lat.toFixed(5)}, ${node.lon.toFixed(5)}</span>`
-      + `${node.osm_nodes?.length ? `<div style="color:#64748b;font-size:10px;font-family:monospace;margin-top:2px;">OSM #${esc(node.osm_nodes.slice(0, 3).join(', '))}</div>` : ''}</div>`
+    ? `<div class="world-tip-real">${node.streets?.length ? `<div style="font-weight:700;color:var(--text-primary);font-size:13px;margin-bottom:2px;">${esc(node.streets.join(' × '))}</div>` : ''}`
+      + `<span style="color:var(--text-secondary);font-size:10.5px;">📍 Real Signal Head · ${node.lat.toFixed(5)}, ${node.lon.toFixed(5)}</span>`
+      + `${node.osm_nodes?.length ? `<div style="color:var(--text-muted);font-size:10px;font-family:monospace;margin-top:2px;">OSM #${esc(node.osm_nodes.slice(0, 3).join(', '))}</div>` : ''}</div>`
     : '';
   const q = j?.queue || 0;
   const occ = j?.occupancy;
   const ph = j?.phase;
   const isGreen = ph != null && ph % 2 === 0;
   const phasePill = ph != null
-    ? `<span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:${isGreen ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'};color:${isGreen ? '#34d399' : '#fbbf24'};border:1px solid ${isGreen ? 'rgba(16,185,129,0.4)' : 'rgba(245,158,11,0.4)'};">Phase ${ph} (${isGreen ? 'GREEN' : 'YELLOW'})</span>`
+    ? `<span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:10.5px;font-weight:600;background:${isGreen ? 'color-mix(in srgb, var(--status-ok) 20%, transparent)' : 'color-mix(in srgb, var(--status-warn) 20%, transparent)'};color:${isGreen ? 'var(--status-ok)' : 'var(--status-warn)'};border:1px solid ${isGreen ? 'color-mix(in srgb, var(--status-ok) 40%, transparent)' : 'color-mix(in srgb, var(--status-warn) 40%, transparent)'};">Phase ${ph} (${isGreen ? 'GREEN' : 'YELLOW'})</span>`
     : '';
 
   return `<div style="min-width:220px;">
     ${real}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1);">
-      <span style="font-family:monospace;font-weight:800;color:#38bdf8;font-size:15px;">${esc(node.id)}</span>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 8px;padding-bottom:6px;border-bottom:1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);">
+      <span style="font-family:monospace;font-weight:800;color:var(--accent);font-size:15px;">${esc(node.id)}</span>
       <span style="font-size:11px;font-weight:700;color:${HEAT[s]};">${SEV_NAME[s]}</span>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11.5px;color:#cbd5e1;">
-      <div><span style="font-size:10px;text-transform:uppercase;color:#94a3b8;display:block;">Queue</span><b style="color:${q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399'};">${fmt(q, 0)} veh</b></div>
-      <div><span style="font-size:10px;text-transform:uppercase;color:#94a3b8;display:block;">Occupancy</span><b>${occ == null ? '—' : fmt(occ * 100, 1) + '%'}</b></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11.5px;color:var(--text-secondary);">
+      <div><span style="font-size:10px;text-transform:uppercase;color:var(--text-secondary);display:block;">Queue</span><b style="color:${q > 4 ? 'var(--signal-red)' : q > 1 ? 'var(--status-warn)' : 'var(--status-ok)'};">${fmt(q, 0)} veh</b></div>
+      <div><span style="font-size:10px;text-transform:uppercase;color:var(--text-secondary);display:block;">Occupancy</span><b>${occ == null ? '—' : fmt(occ * 100, 1) + '%'}</b></div>
     </div>
     ${phasePill ? `<div style="margin-top:8px;">${phasePill}</div>` : ''}
   </div>`;
@@ -98,7 +101,10 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
   const [ready, setReady] = useState(false);
   const [anchor, setAnchor] = useState(null);
   const [placeMode, setPlaceMode] = useState(false);
-  const [base, setBase] = useState('dark');
+  // The base map follows the theme until the visitor picks one.
+  const [pickedBase, setBase] = useState(null);
+  const mapBase = useThemeTokens(MAP_BASE_TOKEN)['--map-base'];
+  const base = pickedBase ?? (mapBase === 'light' ? 'streets' : 'dark');
   const [isFull, toggleFull] = useFullscreen(wrapRef);
 
   onSelectRef.current = onSelect;
@@ -251,7 +257,7 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
         r.setStyle({ fillColor: HEAT[s] });
       });
       const isSel = selected === n.id;
-      n.marker.setStyle({ radius: isSel ? 8 : 5.5, color: isSel ? '#ffffff' : '#0b1220', weight: isSel ? 2.5 : 1.5, fillColor: HEAT[s] });
+      n.marker.setStyle({ radius: isSel ? 8 : 5.5, color: isSel ? 'var(--text-primary)' : 'var(--bg-surface)', weight: isSel ? 2.5 : 1.5, fillColor: HEAT[s] });
       n.marker.setRadius(isSel ? 8 : 5.5);
       n.marker.setTooltipContent(tipHtml(n.node, j));
     }
@@ -265,7 +271,7 @@ export default function WorldHeatmap({ layout, junctions, route = [], network, s
     const L = LRef.current;
     for (let i = 1; i < route.length; i++) {
       const p = d.pos[route[i - 1]], q = d.pos[route[i]];
-      if (p && q) L.polyline([p, q], { pane: 'roads', color: '#38bdf8', weight: 6, dashArray: '10 8', opacity: 0.95, interactive: false }).addTo(d.routeGroup);
+      if (p && q) L.polyline([p, q], { pane: 'roads', color: 'var(--accent)', weight: 6, dashArray: '10 8', opacity: 0.95, interactive: false }).addTo(d.routeGroup);
     }
   }, [ready, layoutKey, anchor, junctions, selected, route, isGeo]);
 

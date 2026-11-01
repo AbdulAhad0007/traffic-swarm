@@ -1,0 +1,141 @@
+/* The shared design system. Loaded after globals.css, so these rules settle the look of every module:
+   flat surfaces, one hairline border, corners and type from the active theme. */
+
+body { line-height: 1.5; }
+
+h1 {
+  font-size: clamp(34px, 5vw, 56px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  background: none;
+  color: var(--text-primary);
+  -webkit-text-fill-color: currentColor;
+}
+h2 { font-size: 22px; line-height: 1.2; }
+h3 { font-size: 17px; line-height: 1.25; }
+
+/* Page headers */
+header { background: var(--bg-surface); border: 1px solid var(--line-strong); border-radius: var(--radius-lg); box-shadow: none; backdrop-filter: none; }
+header::before { display: none; }
+.eyebrow { padding: 0; background: none; border: 0; border-radius: 0; font-family: var(--font-main); font-size: 13px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--accent); }
+
+/* Surfaces */
+.card, .panel {
+  background: var(--bg-card);
+  background-image: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+.card::before, .card::after, .panel::before, .panel::after { display: none; }
+.card:hover, .panel:hover { transform: none; box-shadow: var(--shadow-1); }
+
+/* Buttons: quiet by default, filled for the main action */
+button {
+  background: var(--bg-elevated);
+  background-image: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+button:hover:not(:disabled) {
+  transform: none;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-elevated));
+  border-color: var(--accent);
+  box-shadow: none;
+}
+button:active:not(:disabled) { transform: none; background: var(--bg-sunken); box-shadow: none; }
+button.primary, .osm-actions button.primary, button[type='submit'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+button.primary:hover:not(:disabled), .osm-actions button.primary:hover:not(:disabled), button[type='submit']:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 86%, var(--text-primary));
+  color: var(--accent-ink);
+}
+button.danger { background: color-mix(in srgb, var(--status-danger) 14%, var(--bg-surface)); border-color: var(--status-danger); color: var(--danger-soft); }
+
+/* Form controls */
+input, select, textarea {
+  background: var(--bg-sunken);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  box-shadow: none;
+  color: var(--text-primary);
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Tags and status */
+.status, .badge { border-radius: var(--radius-sm); box-shadow: none; letter-spacing: 0; }
+
+/* Tables */
+th { font-family: var(--font-main); letter-spacing: 0; text-transform: none; color: var(--text-secondary); border-bottom: 1px solid var(--line-strong); }
+td { border-bottom: 1px solid var(--line); }
+
+/* Sidebar */
+.app-sidebar { background: var(--bg-surface); background-image: none; border-right: 1px solid var(--line-strong); box-shadow: none; backdrop-filter: none; }
+.brand-icon-box { background: color-mix(in srgb, var(--accent) 14%, transparent); border: 0; border-radius: var(--radius-sm); box-shadow: none; }
+.brand-title { font-family: var(--font-display); letter-spacing: 0; }
+.sidebar-nav-item { background: none; border: 0; border-radius: var(--radius-sm); box-shadow: none; transform: none; }
+.sidebar-nav-item:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); box-shadow: none; transform: none; }
+.sidebar-nav-item.active { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); box-shadow: none; }
+.nav-icon-wrap { background: none; border: 0; box-shadow: none; }
+.nav-tag { background: none; border: 0; box-shadow: none; letter-spacing: 0; font-family: var(--font-main); color: var(--text-muted); }
+.telemetry-pill { background: var(--bg-sunken); border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: none; }
+
+/* Overview hero */
+header.overview-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 1fr);
+  gap: 32px;
+  align-items: center;
+  padding: 32px;
+  overflow: visible;
+}
+header.overview-hero h1 { font-size: clamp(34px, 4.6vw, 56px); margin: 0 0 12px; }
+.overview-hero-lede { font-size: 17px; color: var(--text-primary); margin: 0 0 8px; }
+header.overview-hero .overview-hero-lede { font-size: 17px; }
+.overview-hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 18px; }
+.overview-hero-meta .badge { display: inline-flex; align-items: center; gap: 6px; }
+
+.junction-mesh { margin: 0; min-width: 0; }
+.junction-mesh svg { display: block; width: 100%; height: auto; }
+.junction-mesh figcaption { margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+.mesh-roads line { stroke: var(--line-strong); stroke-width: 7; stroke-linecap: round; }
+.mesh-wave {
+  fill: none;
+  stroke: var(--wave);
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  animation: mesh-draw 5s ease-in-out infinite;
+}
+.mesh-node circle { fill: var(--bg-card); stroke: var(--text-muted); stroke-width: 2; }
+.mesh-node text { font-family: var(--font-mono); font-size: 8.5px; font-weight: 600; fill: var(--text-secondary); }
+.mesh-node.lit { animation: mesh-lit 5s ease-in-out infinite; }
+.mesh-node.lit circle { stroke: var(--wave); stroke-width: 3; }
+.mesh-node.lit text { fill: var(--text-primary); }
+@keyframes mesh-draw {
+  0% { stroke-dashoffset: 100; }
+  55%, 85% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -100; }
+}
+@keyframes mesh-lit {
+  0%, 100% { opacity: 0.55; }
+  30%, 80% { opacity: 1; }
+}
+
+@media (max-width: 900px) {
+  header.overview-hero { grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 20px 16px; align-items: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-wave, .mesh-node.lit { animation: none; }
+  .mesh-wave { stroke-dashoffset: 0; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

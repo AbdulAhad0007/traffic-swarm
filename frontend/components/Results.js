@@ -6,8 +6,8 @@ import { lab, fmt, KPIS, colorOf, variantOfDir } from '@/lib/api';
 import { KpiTable } from '@/components/BeforeAfter';
 import { useSections } from '@/components/SiteConfigProvider';
 
-const axis = { stroke: '#8a94a6', fontSize: 12 };
-const tip = { contentStyle: { background: '#101722', border: '1px solid #273244', borderRadius: 8, color: '#eef2f7' } };
+const axis = { stroke: 'var(--text-secondary)', fontSize: 12 };
+const tip = { contentStyle: { background: 'var(--bg-surface)', border: '1px solid var(--line-strong)', borderRadius: 8, color: 'var(--text-primary)' } };
 
 function useRuns() { const [runs, setRuns] = useState([]); useEffect(() => { lab('/api/lab/runs').then(setRuns).catch(() => { }) }, []); return runs }
 function useReports() { const [r, setR] = useState([]); useEffect(() => { lab('/api/lab/reports').then(setR).catch(() => { }) }, []); return r }
@@ -29,7 +29,7 @@ function SavedRun({ id }) {
     <div className="meta"><span>scenario <b>{cmp.scenario}</b></span><span>seed <b>{cmp.seed}</b></span><span>network <b>{cmp.metadata?.network?.preset}</b></span><span>route sha256 <b className="mono">{cmp.metadata?.scenario_route_sha256?.slice(0, 12)}…</b></span></div>
     {on('saved-run-charts') && <div className="multiples">{KPIS.slice(0, 6).map(([k, label, unit]) => { const data = ctrls.map(c => ({ c, v: cmp.controllers[c]?.[k] })).filter(d => d.v != null);
       return <div key={k} className="mini"><b>{label}</b> <span className="muted small">{unit}</span>
-        <ResponsiveContainer width="100%" height={150}><BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke="#1c2634" vertical={false} />
+        <ResponsiveContainer width="100%" height={150}><BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke="var(--bg-elevated)" vertical={false} />
           <XAxis dataKey="c" tick={axis} interval={0} angle={-15} textAnchor="end" height={40} /><YAxis tick={axis} width={52} /><Tooltip {...tip} formatter={v => [fmt(v), label]} />
           <Bar dataKey="v" radius={[4, 4, 0, 0]} maxBarSize={36}>{data.map(d => <Cell key={d.c} fill={colorOf(d.c)} />)}</Bar></BarChart></ResponsiveContainer></div> })}</div>}
     {on('saved-run-kpi-table') && <KpiTable result={cmp} />}
@@ -47,7 +47,7 @@ function CiChart({ rows }) {
     {rows.map((r, i) => { const y = 20 + i * 28; return <g key={r.controller}><title>{`${r.controller}: mean ${fmt(r.mean)} (95% CI ${fmt(r.ci_low)} – ${fmt(r.ci_high)}), n=${r.n}`}</title>
       <text x={L - 8} y={y + 4} textAnchor="end" className="lab">{r.controller} (n={r.n})</text>
       {r.ci_low != null && <line x1={x(r.ci_low)} x2={x(r.ci_high)} y1={y} y2={y} stroke={colorOf(r.controller)} strokeWidth="2" />}
-      <circle cx={x(r.mean)} cy={y} r="5" fill={colorOf(r.controller)} stroke="#0c1119" strokeWidth="2" /></g> })}</svg>;
+      <circle cx={x(r.mean)} cy={y} r="5" fill={colorOf(r.controller)} stroke="var(--bg-sunken)" strokeWidth="2" /></g> })}</svg>;
 }
 
 function EvaluationReport({ name }) {
@@ -79,8 +79,8 @@ function PredictionReport({ rep }) {
     <div className="tablewrap"><table><thead><tr><th>horizon</th><th>model</th><th>type</th><th>n</th><th>MAE (veh)</th><th>RMSE (veh)</th><th>class acc.</th><th>macro-F1</th><th>latency µs</th></tr></thead>
       <tbody>{hs.flatMap(([h, hr]) => Object.entries(hr.models).map(([k, m]) => <tr key={h + k}><td>{hr.horizon_s} s</td><td>{k}{hr.best_baseline === k ? ' (best baseline)' : ''}</td><td>{m.learned ? 'learned (ridge AR)' : 'rule baseline'}</td><td>{m.n}</td><td>{fmt(m.mae, 3)}</td><td>{fmt(m.rmse, 3)}</td><td>{fmt(m.class_accuracy, 3)}</td><td>{fmt(m.class_macro_f1, 3)}</td><td>{fmt(m.latency_us_mean, 1)}</td></tr>))}</tbody></table></div>
     {series.length > 0 && <><h3>Predicted vs actual queue · {rep.series_label}</h3>
-      <ResponsiveContainer width="100%" height={300}><LineChart data={series}><CartesianGrid stroke="#1c2634" /><XAxis dataKey="time" tick={axis} unit=" s" /><YAxis tick={axis} unit=" veh" width={60} /><Tooltip {...tip} /><Legend />
-        <Line dataKey="actual" stroke="#eef2f7" strokeWidth={2} dot={false} />{models.map((m, i) => <Line key={m} dataKey={m} stroke={['#3987e5', '#d95926', '#199e70', '#9085e9'][i]} strokeWidth={2} dot={false} strokeDasharray={i === 0 ? '4 3' : undefined} />)}</LineChart></ResponsiveContainer></>}
+      <ResponsiveContainer width="100%" height={300}><LineChart data={series}><CartesianGrid stroke="var(--bg-elevated)" /><XAxis dataKey="time" tick={axis} unit=" s" /><YAxis tick={axis} unit=" veh" width={60} /><Tooltip {...tip} /><Legend />
+        <Line dataKey="actual" stroke="var(--text-primary)" strokeWidth={2} dot={false} />{models.map((m, i) => <Line key={m} dataKey={m} stroke={['var(--accent)', 'var(--status-danger)', 'var(--status-ok)', 'var(--accent-3-soft)'][i]} strokeWidth={2} dot={false} strokeDasharray={i === 0 ? '4 3' : undefined} />)}</LineChart></ResponsiveContainer></>}
   </>;
 }
 
@@ -94,7 +94,7 @@ function MixedTraffic({ id }) {
   return <>
     <div className="meta"><span>mix <b>{sd.vehicle_mix || 'cars_only (legacy)'}</b></span><span>persons generated <b>{sd.persons ?? 0}</b></span><span>lateral resolution <b>{sd.lateral_resolution ?? 'off'}</b></span></div>
     {comp.length > 0 && <><h3>Generated demand by vehicle type</h3>
-      <ResponsiveContainer width="100%" height={200}><BarChart data={comp}><CartesianGrid stroke="#1c2634" vertical={false} /><XAxis dataKey="k" tick={axis} /><YAxis tick={axis} width={50} /><Tooltip {...tip} formatter={v => [fmt(v, 0), 'vehicles']} /><Bar dataKey="v" fill="#3987e5" radius={[4, 4, 0, 0]} maxBarSize={48} /></BarChart></ResponsiveContainer>
+      <ResponsiveContainer width="100%" height={200}><BarChart data={comp}><CartesianGrid stroke="var(--bg-elevated)" vertical={false} /><XAxis dataKey="k" tick={axis} /><YAxis tick={axis} width={50} /><Tooltip {...tip} formatter={v => [fmt(v, 0), 'vehicles']} /><Bar dataKey="v" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={48} /></BarChart></ResponsiveContainer>
       <p className="muted small">Configured shares: {Object.entries(shares).map(([k, v]) => `${k} ${fmt(v * 100, 0)} %`).join(' · ')}. These are scenario assumptions, not observed counts of any real city.</p></>}
     <div className="tablewrap"><table><thead><tr><th>vehicle type</th>{ctrls.map(c => <th key={c} colSpan="3"><i className="dot" style={{ background: colorOf(c) }} />{c}</th>)}
       </tr><tr><th />{ctrls.map(c => <React.Fragment key={c}><th>arrived</th><th>time loss s</th><th>waits</th></React.Fragment>)}</tr></thead>

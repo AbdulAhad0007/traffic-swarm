@@ -103,25 +103,25 @@ export default function PredictionDashboard() {
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', color: '#f8fafc' }}>
+    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', color: 'var(--text-primary)' }}>
       {/* Top Banner & City Control */}
       <div style={{
         position: 'relative',
         zIndex: 20,
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
+        background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-elevated) 80%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 95%, transparent) 100%)',
+        border: '1px solid color-mix(in srgb, var(--accent) 25%, transparent)',
         borderRadius: 12,
         padding: 24,
         marginBottom: 24,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.37)'
+        boxShadow: '0 8px 32px color-mix(in srgb, var(--shadow-color) 37%, transparent)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{
-                background: 'rgba(56, 189, 248, 0.15)',
-                color: '#38bdf8',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
+                background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
+                color: 'var(--accent)',
+                border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)',
                 padding: '4px 10px',
                 borderRadius: 6,
                 fontSize: '0.8rem',
@@ -132,16 +132,16 @@ export default function PredictionDashboard() {
               }}>
                 <Brain size={14} /> AI CONGESTION & TRAFFIC PREDICTOR
               </span>
-              <span style={{ color: '#10b981', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+              <span style={{ color: 'var(--status-ok)', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--status-ok)', display: 'inline-block' }} />
                 Real-Time Online Model
               </span>
             </div>
-            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: '#f1f5f9' }}>
+            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Real-Time Traffic Prediction & Surge Forecaster
             </h1>
-            <p style={{ margin: '6px 0 0 0', color: '#94a3b8', fontSize: '0.95rem' }}>
-              Anticipates platoon arrivals 5–30 minutes in advance so downstream traffic lights adjust <b style={{ color: '#38bdf8' }}>before</b> vehicles stop, cutting fuel waste and idling.
+            <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
+              Anticipates platoon arrivals 5–30 minutes in advance so downstream traffic lights adjust <b style={{ color: 'var(--accent)' }}>before</b> vehicles stop, cutting fuel waste and idling.
             </p>
           </div>
 
@@ -169,9 +169,9 @@ export default function PredictionDashboard() {
             <button
               onClick={() => setIsPlaying(!isPlaying)}
               style={{
-                background: isPlaying ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                color: isPlaying ? '#ef4444' : '#10b981',
-                border: `1px solid ${isPlaying ? '#ef4444' : '#10b981'}`,
+                background: isPlaying ? 'color-mix(in srgb, var(--signal-red) 20%, transparent)' : 'color-mix(in srgb, var(--status-ok) 20%, transparent)',
+                color: isPlaying ? 'var(--signal-red)' : 'var(--status-ok)',
+                border: `1px solid ${isPlaying ? 'var(--signal-red)' : 'var(--status-ok)'}`,
                 padding: '8px 16px',
                 borderRadius: 8,
                 cursor: 'pointer',
@@ -198,9 +198,9 @@ export default function PredictionDashboard() {
             style={{
               padding: '10px 16px',
               borderRadius: 8,
-              background: idx === selectedJunctionIdx ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.6)',
-              border: `1px solid ${idx === selectedJunctionIdx ? '#38bdf8' : 'rgba(255,255,255,0.08)'}`,
-              color: idx === selectedJunctionIdx ? '#f8fafc' : '#94a3b8',
+              background: idx === selectedJunctionIdx ? 'color-mix(in srgb, var(--accent) 20%, transparent)' : 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)',
+              border: `1px solid ${idx === selectedJunctionIdx ? 'var(--accent)' : 'color-mix(in srgb, var(--text-primary) 8%, transparent)'}`,
+              color: idx === selectedJunctionIdx ? 'var(--text-primary)' : 'var(--text-secondary)',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               fontSize: '0.85rem',
@@ -212,7 +212,7 @@ export default function PredictionDashboard() {
             }}
           >
             <span>{j.name}</span>
-            <span style={{ fontSize: '0.72rem', color: idx === selectedJunctionIdx ? '#38bdf8' : '#64748b' }}>
+            <span style={{ fontSize: '0.72rem', color: idx === selectedJunctionIdx ? 'var(--accent)' : 'var(--text-muted)' }}>
               {j.corridor} · {city.name}
             </span>
           </button>
@@ -221,57 +221,57 @@ export default function PredictionDashboard() {
 
       {/* KPI Stats Grid */}
       {on('kpi-cards') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Forecasted Queue (Next {horizon}m)</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#f59e0b', marginTop: 4 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Forecasted Queue (Next {horizon}m)</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-warn)', marginTop: 4 }}>
             {seriesData[seriesData.length - 1]?.predicted} vehicles
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Without dynamic intervention</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Without dynamic intervention</div>
         </div>
 
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Swarm AI Optimized Queue</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10b981', marginTop: 4 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Swarm AI Optimized Queue</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-ok)', marginTop: 4 }}>
             {seriesData[seriesData.length - 1]?.swarmOptimized} vehicles
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#10b981', marginTop: 4 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--status-ok)', marginTop: 4 }}>
             -68% queue reduction via pre-emptive green
           </div>
         </div>
 
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fuel Waste Prevented</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#a855f7', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fuel Waste Prevented</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent-3)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Fuel size={20} /> 24.8 Liters / hr
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>
             Zero idling at {activeJunction.name}
           </div>
         </div>
 
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Model Prediction Accuracy</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8', marginTop: 4 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Model Prediction Accuracy</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>
             94.2% (MAE 1.8 veh)
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Ridge AR + Adaptive Swarm Predictor</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Ridge AR + Adaptive Swarm Predictor</div>
         </div>
       </div>}
 
       {/* Main Real-Time Graph */}
       {on('queue-graph') && <div style={{
-        background: 'rgba(15, 23, 42, 0.8)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'color-mix(in srgb, var(--bg-surface) 80%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
         borderRadius: 12,
         padding: 24,
         marginBottom: 24
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#f1f5f9' }}>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
               Real-Time Traffic Queue & Predictive Horizon · {activeJunction.name}
             </h3>
-            <p style={{ margin: '4px 0 0 0', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
               Comparing historical ground truth vs. AI predicted surge vs. pre-emptively cleared Swarm flow.
             </p>
           </div>
@@ -280,43 +280,43 @@ export default function PredictionDashboard() {
         <div style={{ height: 340, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={seriesData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="time" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} unit=" veh" />
+              <CartesianGrid stroke="color-mix(in srgb, var(--text-primary) 6%, transparent)" />
+              <XAxis dataKey="time" stroke="var(--text-muted)" fontSize={12} />
+              <YAxis stroke="var(--text-muted)" fontSize={12} unit=" veh" />
               <Tooltip
                 contentStyle={{
-                  background: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   borderRadius: 8,
                   fontSize: '0.85rem',
-                  color: '#f8fafc'
+                  color: 'var(--text-primary)'
                 }}
               />
               <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem' }} />
               <Line
                 type="monotone"
                 dataKey="actual"
-                stroke="#f1f5f9"
+                stroke="var(--text-primary)"
                 strokeWidth={3}
                 name="Actual Vehicles (Past Ground Truth)"
-                dot={{ r: 4, fill: '#f1f5f9' }}
+                dot={{ r: 4, fill: 'var(--text-primary)' }}
               />
               <Line
                 type="monotone"
                 dataKey="predicted"
-                stroke="#f59e0b"
+                stroke="var(--status-warn)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 name="AI Predicted Queue (Without Swarm Action)"
-                dot={{ r: 3, fill: '#f59e0b' }}
+                dot={{ r: 3, fill: 'var(--status-warn)' }}
               />
               <Line
                 type="monotone"
                 dataKey="swarmOptimized"
-                stroke="#10b981"
+                stroke="var(--status-ok)"
                 strokeWidth={3}
                 name="Swarm Continuous Flow (Active Pre-Emption)"
-                dot={{ r: 4, fill: '#10b981' }}
+                dot={{ r: 4, fill: 'var(--status-ok)' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -325,20 +325,20 @@ export default function PredictionDashboard() {
 
       {/* Predictive Signal Adjustment Strategy */}
       {on('preemptive-action') && <div style={{
-        background: 'rgba(30, 41, 59, 0.4)',
-        border: '1px solid rgba(56, 189, 248, 0.15)',
+        background: 'color-mix(in srgb, var(--bg-elevated) 40%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--accent) 15%, transparent)',
         borderRadius: 10,
         padding: 20
       }}>
-        <h4 style={{ margin: '0 0 10px 0', color: '#38bdf8', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <h4 style={{ margin: '0 0 10px 0', color: 'var(--accent)', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Zap size={16} /> Pre-Emptive Swarm Action at {activeJunction.name}
         </h4>
-        <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.88rem', lineHeight: 1.6 }}>
+        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6 }}>
           Instead of waiting for vehicles to reach the stop line and queue up, the system predicts the incoming surge
-          of <b style={{ color: '#f59e0b' }}>{seriesData[seriesData.length - 1]?.predicted} vehicles</b> arriving
-          from <b style={{ color: '#f8fafc' }}>{activeJunction.corridor}</b>. The signal timing will automatically
-          extend green by <b style={{ color: '#10b981' }}>14 seconds</b>, allowing the entire platoon to pass without a single stop.
-          Estimated fuel saved for this wave alone: <b style={{ color: '#a855f7' }}>1.4 Liters of fuel</b>.
+          of <b style={{ color: 'var(--status-warn)' }}>{seriesData[seriesData.length - 1]?.predicted} vehicles</b> arriving
+          from <b style={{ color: 'var(--text-primary)' }}>{activeJunction.corridor}</b>. The signal timing will automatically
+          extend green by <b style={{ color: 'var(--status-ok)' }}>14 seconds</b>, allowing the entire platoon to pass without a single stop.
+          Estimated fuel saved for this wave alone: <b style={{ color: 'var(--accent-3)' }}>1.4 Liters of fuel</b>.
         </p>
       </div>}
     </div>

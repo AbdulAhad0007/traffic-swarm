@@ -142,7 +142,7 @@ export default function AdminDashboard() {
     <div className="admin-shell">
       <header className="admin-topbar">
         <div className="sidebar-brand">
-          <div className="brand-icon-box"><Car size={18} color="#38bdf8" /></div>
+          <div className="brand-icon-box"><Car size={18} color="var(--accent)" /></div>
           <div className="brand-text">
             <span className="brand-title">TRAFFIC SWARM</span>
             <span className="brand-sub">Admin Console</span>

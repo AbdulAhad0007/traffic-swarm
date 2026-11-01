@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "node --test --test-concurrency=1 tests/unit.test.mjs tests/admin.e2e.test.mjs"
+    "test": "node --test --test-concurrency=1 tests/unit.test.mjs tests/theme.guard.test.mjs tests/admin.e2e.test.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

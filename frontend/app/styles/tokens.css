@@ -24,6 +24,12 @@
   --accent-ink: #06202e;
   --accent-2: #10b981;
   --accent-3: #8b5cf6;
+  --accent-soft: #7dd3fc;
+  --ok-soft: #6ee7b7;
+  --warn-soft: #fde68a;
+  --danger-soft: #fca5a5;
+  --accent-3-soft: #d8b4fe;
+  --shadow-color: #000000;
   --status-ok: #10b981;
   --status-warn: #f59e0b;
   --status-danger: #f43f5e;
@@ -59,6 +65,12 @@
   --accent-ink: #17181a;
   --accent-2: #3ddc84;
   --accent-3: #7cc4ff;
+  --accent-soft: #ffd166;
+  --ok-soft: #8debb6;
+  --warn-soft: #ffb27f;
+  --danger-soft: #ff9c96;
+  --accent-3-soft: #b4dcff;
+  --shadow-color: #000000;
   --status-ok: #3ddc84;
   --status-warn: #ff8a3d;
   --status-danger: #ff5a52;
@@ -94,6 +106,12 @@
   --accent-ink: #ffffff;
   --accent-2: #d9480f;
   --accent-3: #4c4f9e;
+  --accent-soft: #00514e;
+  --ok-soft: #07603e;
+  --warn-soft: #7d4700;
+  --danger-soft: #8f1515;
+  --accent-3-soft: #3b3e85;
+  --shadow-color: #10302e;
   --status-ok: #0a7a4f;
   --status-warn: #a15c00;
   --status-danger: #b91c1c;
@@ -121,7 +139,7 @@
   --border-highlight: var(--line-strong);
   --border-accent: color-mix(in srgb, var(--accent) 30%, transparent);
   --accent-cyan: var(--accent);
-  --accent-emerald: var(--accent-2);
+  --accent-emerald: var(--status-ok);
   --accent-amber: var(--status-warn);
   --accent-rose: var(--status-danger);
   --accent-indigo: var(--accent-3);

@@ -94,6 +94,15 @@ test('admin dashboard renders ThemePicker after the module list', () => {
   assert.ok(picker > src.indexOf('className="admin-modules"'));
 });
 
+test('the junction mesh draws its wave in the wave token and says it is an illustration', () => {
+  const src = readFileSync(new URL('../components/JunctionMesh.js', import.meta.url), 'utf8');
+  assert.match(src, /mesh-wave/);
+  assert.match(src, /[Ii]llustration/);
+  const css = readFileSync(new URL('../app/styles/system.css', import.meta.url), 'utf8');
+  assert.match(css, /\.mesh-wave[^}]*var\(--wave\)/);
+  assert.match(css, /prefers-reduced-motion[\s\S]*mesh-/);
+});
+
 test('the admin area is pinned to the midnight theme', () => {
   const src = readFileSync(new URL('../app/admin/layout.js', import.meta.url), 'utf8');
   assert.match(src, /data-theme="midnight"/);

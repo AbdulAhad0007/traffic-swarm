@@ -45,7 +45,7 @@ export default function AdminLogin() {
     <div className="admin-login-wrap">
       <form className="panel admin-login" onSubmit={submit}>
         <div className="sidebar-brand">
-          <div className="brand-icon-box"><Car size={18} color="#38bdf8" /></div>
+          <div className="brand-icon-box"><Car size={18} color="var(--accent)" /></div>
           <div className="brand-text">
             <span className="brand-title">TRAFFIC SWARM</span>
             <span className="brand-sub">Admin Console</span>

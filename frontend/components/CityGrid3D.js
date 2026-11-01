@@ -18,14 +18,14 @@ const W = 1200;
 const H = 720;
 
 const BUILDING_PRESETS = [
-  { top: '#2a4a72', south: '#152d4a', east: '#0f2137', win: '#38bdf8' },
-  { top: '#3d2a63', south: '#231440', east: '#1a0e30', win: '#a855f7' },
-  { top: '#245240', south: '#132e22', east: '#0d221a', win: '#34d399' },
-  { top: '#4d3a2a', south: '#2e2017', east: '#221710', win: '#fbbf24' },
-  { top: '#3a2a4d', south: '#20162e', east: '#170e22', win: '#f472b6' },
-  { top: '#2a3d4d', south: '#16222e', east: '#0e1822', win: '#60a5fa' },
+  { top: 'var(--accent)', south: 'var(--bg-elevated)', east: 'var(--bg-elevated)', win: 'var(--accent)' },
+  { top: 'var(--accent-3)', south: 'color-mix(in srgb, var(--accent-3) 16%, var(--bg-surface))', east: 'color-mix(in srgb, var(--accent-3) 16%, var(--bg-surface))', win: 'var(--accent-3)' },
+  { top: 'color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))', south: 'color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))', east: 'color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))', win: 'var(--status-ok)' },
+  { top: 'var(--line-strong)', south: 'var(--bg-elevated)', east: 'color-mix(in srgb, var(--status-warn) 16%, var(--bg-surface))', win: 'var(--status-warn)' },
+  { top: 'var(--line-strong)', south: 'color-mix(in srgb, var(--accent-3) 16%, var(--bg-surface))', east: 'color-mix(in srgb, var(--accent-3) 16%, var(--bg-surface))', win: 'var(--danger-soft)' },
+  { top: 'var(--line-strong)', south: 'var(--bg-surface)', east: 'var(--bg-surface)', win: 'var(--accent)' },
 ];
-const CAR_COLORS = ['#e2e8f0', '#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#94a3b8'];
+const CAR_COLORS = ['var(--text-primary)', 'var(--accent)', 'var(--status-warn)', 'var(--status-ok)', 'var(--accent-3)', 'var(--status-danger)', 'var(--accent)', 'var(--text-secondary)'];
 
 function hash(n) {
   let s = (n * 2654435761) % 2147483647;
@@ -52,7 +52,7 @@ function severity(j) {
   const q = j.queue || 0, occ = j.occupancy || 0;
   return q > 4 || occ > 0.4 ? 3 : q > 1 || occ > 0.2 ? 2 : 1;
 }
-const HEAT = ['#475569', '#facc15', '#f97316', '#ef4444'];
+const HEAT = ['var(--text-dim)', 'var(--status-warn)', 'var(--status-warn)', 'var(--signal-red)'];
 
 export default function CityGrid3D({ layout, junctions, route = [], selected, onSelect, onOpenIntersection, height = 560 }) {
   const wrapRef = useRef(null);
@@ -197,8 +197,8 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
           const [ex1, ey1] = P(u + a, v + b * 0.85, z), [ex2, ey2] = P(u + a, v - b * 0.85, z);
           const lit = hash(st.id * 31 + f) > 0.35;
           floorLines.push(
-            <line key={'s' + f} x1={sx1} y1={sy1} x2={sx2} y2={sy2} stroke={lit ? preset.win : '#0b1220'} strokeWidth={Math.max(0.6, L * 0.018 * s)} strokeDasharray={`${L * 0.03 * s} ${L * 0.02 * s}`} opacity={0.75} />,
-            <line key={'e' + f} x1={ex1} y1={ey1} x2={ex2} y2={ey2} stroke={lit ? preset.win : '#0b1220'} strokeWidth={Math.max(0.6, L * 0.018 * s)} strokeDasharray={`${L * 0.03 * s} ${L * 0.02 * s}`} opacity={0.5} />
+            <line key={'s' + f} x1={sx1} y1={sy1} x2={sx2} y2={sy2} stroke={lit ? preset.win : 'var(--bg-surface)'} strokeWidth={Math.max(0.6, L * 0.018 * s)} strokeDasharray={`${L * 0.03 * s} ${L * 0.02 * s}`} opacity={0.75} />,
+            <line key={'e' + f} x1={ex1} y1={ey1} x2={ex2} y2={ey2} stroke={lit ? preset.win : 'var(--bg-surface)'} strokeWidth={Math.max(0.6, L * 0.018 * s)} strokeDasharray={`${L * 0.03 * s} ${L * 0.02 * s}`} opacity={0.5} />
           );
         }
       }
@@ -206,9 +206,9 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
         depth: geo.depthOf(u, v),
         el: (
           <g key={'b' + st.id}>
-            <polygon points={poly([[u - a, v + b, 0], [u + a, v + b, 0], [u + a, v + b, h], [u - a, v + b, h]])} fill={preset.south} stroke="rgba(255,255,255,0.05)" strokeWidth={0.4} />
-            <polygon points={poly([[u + a, v - b, 0], [u + a, v + b, 0], [u + a, v + b, h], [u + a, v - b, h]])} fill={preset.east} stroke="rgba(255,255,255,0.04)" strokeWidth={0.4} />
-            <polygon points={poly([[u - a, v - b, h], [u + a, v - b, h], [u + a, v + b, h], [u - a, v + b, h]])} fill={preset.top} stroke="rgba(255,255,255,0.1)" strokeWidth={0.4} />
+            <polygon points={poly([[u - a, v + b, 0], [u + a, v + b, 0], [u + a, v + b, h], [u - a, v + b, h]])} fill={preset.south} stroke="color-mix(in srgb, var(--text-primary) 5%, transparent)" strokeWidth={0.4} />
+            <polygon points={poly([[u + a, v - b, 0], [u + a, v + b, 0], [u + a, v + b, h], [u + a, v - b, h]])} fill={preset.east} stroke="color-mix(in srgb, var(--text-primary) 4%, transparent)" strokeWidth={0.4} />
+            <polygon points={poly([[u - a, v - b, h], [u + a, v - b, h], [u + a, v + b, h], [u - a, v + b, h]])} fill={preset.top} stroke="color-mix(in srgb, var(--text-primary) 10%, transparent)" strokeWidth={0.4} />
             {floorLines}
           </g>
         ),
@@ -225,9 +225,9 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
     const slab = L * 0.08;
     return (
       <g>
-        <polygon points={poly([[u0, v1, 0], [u1, v1, 0], [u1, v1, -slab], [u0, v1, -slab]])} fill="#0a1220" />
-        <polygon points={poly([[u1, v0, 0], [u1, v1, 0], [u1, v1, -slab], [u1, v0, -slab]])} fill="#070d18" />
-        <polygon points={poly([[u0, v0, 0], [u1, v0, 0], [u1, v1, 0], [u0, v1, 0]])} fill="url(#cityGround)" stroke="rgba(56,189,248,0.25)" strokeWidth={1} />
+        <polygon points={poly([[u0, v1, 0], [u1, v1, 0], [u1, v1, -slab], [u0, v1, -slab]])} fill="var(--bg-surface)" />
+        <polygon points={poly([[u1, v0, 0], [u1, v1, 0], [u1, v1, -slab], [u1, v0, -slab]])} fill="var(--bg-sunken)" />
+        <polygon points={poly([[u0, v0, 0], [u1, v0, 0], [u1, v1, 0], [u0, v1, 0]])} fill="url(#cityGround)" stroke="color-mix(in srgb, var(--accent) 25%, transparent)" strokeWidth={1} />
       </g>
     );
   }, [geo]);
@@ -262,7 +262,7 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
             ? Math.max(0.05, 1 - (rw * 1.3 + cl + i * cl * 2.6) / r.len)
             : ((t * 0.09 + hash(k) + i * 0.27) % 1);
           const cu = su + dx * r.len * prog + ox, cv = sv + dy * r.len * prog + oy;
-          const color = queued ? '#ef4444' : CAR_COLORS[k % CAR_COLORS.length];
+          const color = queued ? 'var(--signal-red)' : CAR_COLORS[k % CAR_COLORS.length];
           if (!detailed && nodeCount > 25) {
             const [x, y] = P(cu, cv, ch);
             cars.push(<circle key={'c' + k} cx={x} cy={y} r={Math.max(1.4, rw * 0.22 * s)} fill={color} />);
@@ -271,9 +271,9 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
           const corner = (fl, fw, z) => [cu + dx * fl - dy * fw, cv + dy * fl + dx * fw, z];
           cars.push(
             <g key={'c' + k}>
-              <polygon points={poly([corner(-cl, -cw, 0), corner(cl, -cw, 0), corner(cl, cw, 0), corner(-cl, cw, 0)])} fill="rgba(0,0,0,0.5)" />
-              <polygon points={poly([corner(-cl, -cw, ch), corner(cl, -cw, ch), corner(cl, cw, ch), corner(-cl, cw, ch)])} fill={color} stroke="rgba(0,0,0,0.6)" strokeWidth={0.3} />
-              {detailed && <polygon points={poly([corner(-cl * 0.2, -cw * 0.8, ch * 1.01), corner(cl * 0.5, -cw * 0.8, ch * 1.01), corner(cl * 0.5, cw * 0.8, ch * 1.01), corner(-cl * 0.2, cw * 0.8, ch * 1.01)])} fill="rgba(15,23,42,0.55)" />}
+              <polygon points={poly([corner(-cl, -cw, 0), corner(cl, -cw, 0), corner(cl, cw, 0), corner(-cl, cw, 0)])} fill="color-mix(in srgb, var(--shadow-color) 50%, transparent)" />
+              <polygon points={poly([corner(-cl, -cw, ch), corner(cl, -cw, ch), corner(cl, cw, ch), corner(-cl, cw, ch)])} fill={color} stroke="color-mix(in srgb, var(--shadow-color) 60%, transparent)" strokeWidth={0.3} />
+              {detailed && <polygon points={poly([corner(-cl * 0.2, -cw * 0.8, ch * 1.01), corner(cl * 0.5, -cw * 0.8, ch * 1.01), corner(cl * 0.5, cw * 0.8, ch * 1.01), corner(-cl * 0.2, cw * 0.8, ch * 1.01)])} fill="color-mix(in srgb, var(--bg-surface) 55%, transparent)" />}
             </g>
           );
         }
@@ -308,17 +308,17 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
             <>
               <polygon points={poly([[u - a, v + a, 0], [u + a, v + a, 0], [u + a, v + a, ph], [u - a, v + a, ph]])} fill={color} opacity={0.75} />
               <polygon points={poly([[u + a, v - a, 0], [u + a, v + a, 0], [u + a, v + a, ph], [u + a, v - a, ph]])} fill={color} opacity={0.55} />
-              <polygon points={poly([[u - a, v - a, ph], [u + a, v - a, ph], [u + a, v + a, ph], [u - a, v + a, ph]])} fill={color} stroke="#fff7d6" strokeWidth={1} opacity={0.95} filter="url(#pillarGlow)" />
+              <polygon points={poly([[u - a, v - a, ph], [u + a, v - a, ph], [u + a, v + a, ph], [u - a, v + a, ph]])} fill={color} stroke="var(--warn-soft)" strokeWidth={1} opacity={0.95} filter="url(#pillarGlow)" />
             </>
           )}
           {(detailed || nodeCount <= 9) && j && (() => {
             const [pu, pv] = [u + rw * 1.25, v - rw * 1.25];
             const [x0, y0] = P(pu, pv, 0), [x1, y1] = P(pu, pv, L * 0.12);
-            const lamp = j.phase == null ? '#64748b' : j.phase % 2 === 0 ? '#10b981' : '#fbbf24';
+            const lamp = j.phase == null ? 'var(--text-muted)' : j.phase % 2 === 0 ? 'var(--status-ok)' : 'var(--status-warn)';
             return (
               <g>
-                <line x1={x0} y1={y0} x2={x1} y2={y1} stroke="#64748b" strokeWidth={Math.max(1, L * 0.008 * s)} />
-                <rect x={x1 - L * 0.012 * s} y={y1 - L * 0.04 * s} width={L * 0.024 * s} height={L * 0.045 * s} rx={1} fill="#0b1220" stroke="#334155" strokeWidth={0.4} />
+                <line x1={x0} y1={y0} x2={x1} y2={y1} stroke="var(--text-muted)" strokeWidth={Math.max(1, L * 0.008 * s)} />
+                <rect x={x1 - L * 0.012 * s} y={y1 - L * 0.04 * s} width={L * 0.024 * s} height={L * 0.045 * s} rx={1} fill="var(--bg-surface)" stroke="var(--text-dim)" strokeWidth={0.4} />
                 <circle cx={x1} cy={y1 - L * 0.018 * s} r={L * 0.009 * s} fill={lamp} filter="url(#pillarGlow)" />
               </g>
             );
@@ -331,8 +331,8 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
       const fs = Math.max(3, 12 / Math.pow(pz.zoom, 0.75));
       labels.push(
         <g key={'l' + id} pointerEvents="none">
-          <rect x={x - fs * 1.4} y={y - fs * 0.95} width={fs * 2.8} height={fs * 1.3} rx={fs * 0.3} fill="rgba(7,11,19,0.85)" stroke={isSel ? '#ffffff' : color} strokeWidth={isSel ? 1.2 : 0.6} />
-          <text x={x} y={y} textAnchor="middle" fontSize={fs * 0.85} fontWeight="700" fontFamily="var(--font-mono)" fill="#f8fafc">{id}</text>
+          <rect x={x - fs * 1.4} y={y - fs * 0.95} width={fs * 2.8} height={fs * 1.3} rx={fs * 0.3} fill="color-mix(in srgb, var(--bg-sunken) 85%, transparent)" stroke={isSel ? 'var(--text-primary)' : color} strokeWidth={isSel ? 1.2 : 0.6} />
+          <text x={x} y={y} textAnchor="middle" fontSize={fs * 0.85} fontWeight="700" fontFamily="var(--font-mono)" fill="var(--text-primary)">{id}</text>
         </g>
       );
     }
@@ -356,17 +356,17 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
       >
         <defs>
           <linearGradient id="citySky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#020617" />
-            <stop offset="100%" stopColor="#0b1324" />
+            <stop offset="0%" stopColor="var(--bg-sunken)" />
+            <stop offset="100%" stopColor="var(--bg-surface)" />
           </linearGradient>
           <pattern id="cityGroundTex" width="14" height="14" patternUnits="userSpaceOnUse">
-            <rect width="14" height="14" fill="#0b1626" />
-            <circle cx="3" cy="3" r="0.7" fill="#12304a" />
-            <circle cx="10" cy="9" r="0.5" fill="#143a2a" />
+            <rect width="14" height="14" fill="var(--bg-surface)" />
+            <circle cx="3" cy="3" r="0.7" fill="var(--bg-elevated)" />
+            <circle cx="10" cy="9" r="0.5" fill="color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))" />
           </pattern>
           <linearGradient id="cityGround" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#0d1b2c" />
-            <stop offset="100%" stopColor="#09121f" />
+            <stop offset="0%" stopColor="var(--bg-surface)" />
+            <stop offset="100%" stopColor="var(--bg-surface)" />
           </linearGradient>
           <filter id="roadHeat" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="3" result="b" />
@@ -377,17 +377,17 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
             <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
           </filter>
           <radialGradient id="hotGlow3" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.75" />
-            <stop offset="55%" stopColor="#f97316" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--signal-red)" stopOpacity="0.75" />
+            <stop offset="55%" stopColor="var(--status-warn)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
           <radialGradient id="hotGlow2" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--status-warn)" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
           <radialGradient id="hotGlow1" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#facc15" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--status-warn)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -396,17 +396,17 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
 
         {/* Roads + thermal congestion strips */}
         {roads.map(r => (
-          <polygon key={'ra' + r.a + r.c} points={r.asphalt} fill="#1a2232" stroke="#273246" strokeWidth={0.6} />
+          <polygon key={'ra' + r.a + r.c} points={r.asphalt} fill="var(--bg-elevated)" stroke="var(--line-strong)" strokeWidth={0.6} />
         ))}
         {Object.entries(rnodes).map(([id, [u, v]]) => (
-          <polygon key={'pad' + id} points={poly([[u - rw * 1.15, v - rw * 1.15, 0], [u + rw * 1.15, v - rw * 1.15, 0], [u + rw * 1.15, v + rw * 1.15, 0], [u - rw * 1.15, v + rw * 1.15, 0]])} fill="#111827" stroke={selected === id ? '#ffffff' : '#334155'} strokeWidth={selected === id ? 1.6 : 0.5} />
+          <polygon key={'pad' + id} points={poly([[u - rw * 1.15, v - rw * 1.15, 0], [u + rw * 1.15, v - rw * 1.15, 0], [u + rw * 1.15, v + rw * 1.15, 0], [u - rw * 1.15, v + rw * 1.15, 0]])} fill="var(--bg-surface)" stroke={selected === id ? 'var(--text-primary)' : 'var(--text-dim)'} strokeWidth={selected === id ? 1.6 : 0.5} />
         ))}
         {roads.map(r => {
           const sev = Math.max(severity(junctions?.[r.a]), severity(junctions?.[r.c]));
           return <polygon key={'rh' + r.a + r.c} points={r.heat} fill={HEAT[sev]} opacity={sev ? 0.55 : 0.15} filter={sev >= 2 ? 'url(#roadHeat)' : undefined} />;
         })}
         {roads.map(r => (
-          <line key={'rl' + r.a + r.c} x1={r.line[0][0]} y1={r.line[0][1]} x2={r.line[1][0]} y2={r.line[1][1]} stroke="#fef9c3" strokeWidth={Math.max(0.4, rw * 0.05 * s)} strokeDasharray={`${rw * 0.6 * s} ${rw * 0.5 * s}`} opacity={0.5} />
+          <line key={'rl' + r.a + r.c} x1={r.line[0][0]} y1={r.line[0][1]} x2={r.line[1][0]} y2={r.line[1][1]} stroke="var(--warn-soft)" strokeWidth={Math.max(0.4, rw * 0.05 * s)} strokeDasharray={`${rw * 0.6 * s} ${rw * 0.5 * s}`} opacity={0.5} />
         ))}
 
         {/* Ground hotspot glow at each junction */}
@@ -481,8 +481,8 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
 
               <div className="hm-fc-stat">
                 <span className="hm-fc-stat-lbl">Halting Queue</span>
-                <span className="hm-fc-stat-val" style={{ color: q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399' }}>
-                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8' }}>veh</span>
+                <span className="hm-fc-stat-val" style={{ color: q > 4 ? 'var(--signal-red)' : q > 1 ? 'var(--status-warn)' : 'var(--status-ok)' }}>
+                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)' }}>veh</span>
                 </span>
               </div>
 
@@ -497,7 +497,7 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
                       className="hm-fc-progress-bar"
                       style={{
                         width: `${Math.min(100, Math.max(2, occPct))}%`,
-                        background: occPct > 60 ? '#ef4444' : occPct > 30 ? '#f59e0b' : '#10b981',
+                        background: occPct > 60 ? 'var(--signal-red)' : occPct > 30 ? 'var(--status-warn)' : 'var(--status-ok)',
                       }}
                     />
                   </div>
@@ -569,7 +569,7 @@ export default function CityGrid3D({ layout, junctions, route = [], selected, on
         {infoId && info ? (
           <>
             <b>{infoId}</b>
-            <span>Level <b style={{ color: LEVEL_COLORS[info.level] || '#94a3b8' }}>{info.level}</b></span>
+            <span>Level <b style={{ color: LEVEL_COLORS[info.level] || 'var(--text-secondary)' }}>{info.level}</b></span>
             <span>Queue <b>{fmt(info.queue, 0)} veh</b></span>
             <span>Occupancy <b>{info.occupancy == null ? '—' : fmt(info.occupancy * 100, 1) + '%'}</b></span>
             <span>Phase <b>{info.phase ?? '—'}</b></span>

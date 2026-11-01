@@ -32,10 +32,10 @@ import RichDropdown from '@/components/RichDropdown';
 import { useSections } from '@/components/SiteConfigProvider';
 
 const VEHICLE_TYPES = [
-  { id: 'tw', label: 'Motorcycles & Scooters', icon: '🏍️', defaultPct: 42, color: '#38bdf8', pcu: 0.5, desc: 'High acceleration & sublane filtering' },
-  { id: 'auto', label: 'Auto-Rickshaws (3-Wheelers)', icon: '🛺', defaultPct: 22, color: '#f59e0b', pcu: 0.8, desc: 'Short turning radius & frequent stops' },
-  { id: 'car', label: 'Passenger Cars & Taxis', icon: '🚗', defaultPct: 26, color: '#10b981', pcu: 1.0, desc: 'Standard private passenger vehicle' },
-  { id: 'bus', label: 'City Buses & Trucks', icon: '🚌', defaultPct: 10, color: '#ef4444', pcu: 2.8, desc: 'Large footprint & slow intersection clearance' },
+  { id: 'tw', label: 'Motorcycles & Scooters', icon: '🏍️', defaultPct: 42, color: 'var(--accent)', pcu: 0.5, desc: 'High acceleration & sublane filtering' },
+  { id: 'auto', label: 'Auto-Rickshaws (3-Wheelers)', icon: '🛺', defaultPct: 22, color: 'var(--status-warn)', pcu: 0.8, desc: 'Short turning radius & frequent stops' },
+  { id: 'car', label: 'Passenger Cars & Taxis', icon: '🚗', defaultPct: 26, color: 'var(--status-ok)', pcu: 1.0, desc: 'Standard private passenger vehicle' },
+  { id: 'bus', label: 'City Buses & Trucks', icon: '🚌', defaultPct: 10, color: 'var(--signal-red)', pcu: 2.8, desc: 'Large footprint & slow intersection clearance' },
 ];
 
 export default function MixedTrafficSimulator() {
@@ -57,10 +57,10 @@ export default function MixedTrafficSimulator() {
     const carPct = remaining - busPct;
 
     return [
-      { name: 'Motorcycles & Scooters (2W)', value: twoWheelerPct, color: '#38bdf8', icon: '🏍️' },
-      { name: 'Auto-Rickshaws (3W)', value: autoPct, color: '#f59e0b', icon: '🛺' },
-      { name: 'Passenger Cars (4W)', value: carPct, color: '#10b981', icon: '🚗' },
-      { name: 'City Buses & Commercial', value: busPct, color: '#ef4444', icon: '🚌' },
+      { name: 'Motorcycles & Scooters (2W)', value: twoWheelerPct, color: 'var(--accent)', icon: '🏍️' },
+      { name: 'Auto-Rickshaws (3W)', value: autoPct, color: 'var(--status-warn)', icon: '🛺' },
+      { name: 'Passenger Cars (4W)', value: carPct, color: 'var(--status-ok)', icon: '🚗' },
+      { name: 'City Buses & Commercial', value: busPct, color: 'var(--signal-red)', icon: '🚌' },
     ];
   }, [rickshawBikeBias]);
 
@@ -96,25 +96,25 @@ export default function MixedTrafficSimulator() {
   }));
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', color: '#f8fafc' }}>
+    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', color: 'var(--text-primary)' }}>
       {/* Header */}
       <div style={{
         position: 'relative',
         zIndex: 20,
-        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)',
-        border: '1px solid rgba(16, 185, 129, 0.25)',
+        background: 'linear-gradient(135deg, color-mix(in srgb, var(--bg-elevated) 80%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 95%, transparent) 100%)',
+        border: '1px solid color-mix(in srgb, var(--status-ok) 25%, transparent)',
         borderRadius: 12,
         padding: 24,
         marginBottom: 24,
-        boxShadow: '0 8px 32px rgba(0,0,0,0.37)'
+        boxShadow: '0 8px 32px color-mix(in srgb, var(--shadow-color) 37%, transparent)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ flex: '1 1 360px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{
-                background: 'rgba(16, 185, 129, 0.15)',
-                color: '#10b981',
-                border: '1px solid rgba(16, 185, 129, 0.3)',
+                background: 'color-mix(in srgb, var(--status-ok) 15%, transparent)',
+                color: 'var(--status-ok)',
+                border: '1px solid color-mix(in srgb, var(--status-ok) 30%, transparent)',
                 padding: '4px 10px',
                 borderRadius: 6,
                 fontSize: '0.8rem',
@@ -125,14 +125,14 @@ export default function MixedTrafficSimulator() {
               }}>
                 <Layers size={14} /> INDIAN MIXED TRAFFIC SIMULATOR
               </span>
-              <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>
+              <span style={{ color: 'var(--accent)', fontSize: '0.8rem' }}>
                 Non-Lane Heterogeneous Vehicle Flow
               </span>
             </div>
-            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: '#f1f5f9' }}>
+            <h1 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               Indian Road Mixed-Vehicle Traffic Optimization
             </h1>
-            <p style={{ margin: '6px 0 0 0', color: '#94a3b8', fontSize: '0.95rem' }}>
+            <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
               How Swarm Intelligence manages chaotic Indian roads with auto-rickshaws, two-wheelers, cars, and buses without fixed lane boundaries.
             </p>
           </div>
@@ -157,15 +157,15 @@ export default function MixedTrafficSimulator() {
         gap: 20,
         marginBottom: 24
       }}>
-        {on('composition-controls') && <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 8 }}>
+        {on('composition-controls') && <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <SlidersHorizontal size={16} /> Indian Traffic Composition Controls
           </h3>
 
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.88rem' }}>
-              <span style={{ color: '#cbd5e1' }}>🏍️ 2-Wheeler & 🛺 Auto-Rickshaw Share:</span>
-              <b style={{ color: '#f59e0b' }}>{rickshawBikeBias}%</b>
+              <span style={{ color: 'var(--text-secondary)' }}>🏍️ 2-Wheeler & 🛺 Auto-Rickshaw Share:</span>
+              <b style={{ color: 'var(--status-warn)' }}>{rickshawBikeBias}%</b>
             </div>
             <input
               type="range"
@@ -173,9 +173,9 @@ export default function MixedTrafficSimulator() {
               max="85"
               value={rickshawBikeBias}
               onChange={e => setRickshawBikeBias(Number(e.target.value))}
-              style={{ width: '100%', cursor: 'pointer', accentColor: '#f59e0b' }}
+              style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--status-warn)' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
               <span>Expressway (Heavy Cars)</span>
               <span>City Core (High 2W/3W Density)</span>
             </div>
@@ -183,8 +183,8 @@ export default function MixedTrafficSimulator() {
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.88rem' }}>
-              <span style={{ color: '#cbd5e1' }}>Corridor Traffic Demand:</span>
-              <b style={{ color: '#10b981' }}>{trafficVolume} veh / hr</b>
+              <span style={{ color: 'var(--text-secondary)' }}>Corridor Traffic Demand:</span>
+              <b style={{ color: 'var(--status-ok)' }}>{trafficVolume} veh / hr</b>
             </div>
             <input
               type="range"
@@ -193,9 +193,9 @@ export default function MixedTrafficSimulator() {
               step="200"
               value={trafficVolume}
               onChange={e => setTrafficVolume(Number(e.target.value))}
-              style={{ width: '100%', cursor: 'pointer', accentColor: '#10b981' }}
+              style={{ width: '100%', cursor: 'pointer', accentColor: 'var(--status-ok)' }}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#64748b', marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
               <span>Off-Peak Flow</span>
               <span>Heavy Rush Hour</span>
             </div>
@@ -203,8 +203,8 @@ export default function MixedTrafficSimulator() {
         </div>}
 
         {/* Vehicle Distribution Pie Chart */}
-        {on('fleet-breakdown') && <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
-          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#10b981' }}>
+        {on('fleet-breakdown') && <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 12, padding: 20 }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: 'var(--status-ok)' }}>
             Current Fleet Breakdown in {city.name}
           </h3>
           <div style={{ display: 'flex', alignItems: 'center', height: 180 }}>
@@ -222,7 +222,7 @@ export default function MixedTrafficSimulator() {
               {mixShares.map(item => (
                 <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{ width: 10, height: 10, borderRadius: '50%', background: item.color, display: 'inline-block' }} />
-                  <span style={{ color: '#cbd5e1' }}>{item.icon} {item.value}%</span>
+                  <span style={{ color: 'var(--text-secondary)' }}>{item.icon} {item.value}%</span>
                 </div>
               ))}
             </div>
@@ -232,60 +232,60 @@ export default function MixedTrafficSimulator() {
 
       {/* Fuel & Delay Impact Highlights */}
       {on('impact-highlights') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
-        <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase' }}>Daily Fuel Saved</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10b981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--status-ok) 20%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Daily Fuel Saved</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-ok)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Fuel size={20} /> {fuelSavedPerDayLiters.toLocaleString()} Liters / day
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Across major corridor signals in {city.name}</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Across major corridor signals in {city.name}</div>
         </div>
 
-        <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase' }}>Average Delay Reduction</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#38bdf8', marginTop: 4 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Average Delay Reduction</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>
             -{Math.round(((comparisonData[0].fixed - comparisonData[0].swarm) / comparisonData[0].fixed) * 100)}% Time Saved
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Continuous green wave pass-through</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Continuous green wave pass-through</div>
         </div>
 
-        <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.2)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase' }}>Idling CO2 Cut</div>
-          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#a855f7', marginTop: 4 }}>
+        <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-3) 20%, transparent)', borderRadius: 10, padding: 18 }}>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Idling CO2 Cut</div>
+          <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent-3)', marginTop: 4 }}>
             {(fuelSavedPerDayLiters * 2.31 / 1000).toFixed(1)} Tons / day
           </div>
-          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Eliminating stop-and-go acceleration</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 4 }}>Eliminating stop-and-go acceleration</div>
         </div>
       </div>}
 
       {/* Comparison Graph */}
       {on('comparison-graph') && <div style={{
-        background: 'rgba(15, 23, 42, 0.8)',
-        border: '1px solid rgba(255,255,255,0.08)',
+        background: 'color-mix(in srgb, var(--bg-surface) 80%, transparent)',
+        border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)',
         borderRadius: 12,
         padding: 24,
         marginBottom: 24
       }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: '#f1f5f9' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
           Fixed Signal Timer vs. Swarm Multi-Agent in Mixed Indian Conditions
         </h3>
         <div style={{ height: 280, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={comparisonData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="metric" stroke="#64748b" fontSize={12} />
-              <YAxis stroke="#64748b" fontSize={12} />
+              <CartesianGrid stroke="color-mix(in srgb, var(--text-primary) 6%, transparent)" />
+              <XAxis dataKey="metric" stroke="var(--text-muted)" fontSize={12} />
+              <YAxis stroke="var(--text-muted)" fontSize={12} />
               <Tooltip
                 contentStyle={{
-                  background: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid color-mix(in srgb, var(--text-primary) 10%, transparent)',
                   borderRadius: 8,
                   fontSize: '0.85rem',
-                  color: '#f8fafc'
+                  color: 'var(--text-primary)'
                 }}
               />
               <Legend wrapperStyle={{ paddingTop: 10, fontSize: '0.85rem' }} />
-              <Bar dataKey="fixed" name="Fixed Timer (Traditional Signal)" fill="#ef4444" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="swarm" name="Swarm Intelligence (Dynamic Continuous Flow)" fill="#10b981" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="fixed" name="Fixed Timer (Traditional Signal)" fill="var(--signal-red)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="swarm" name="Swarm Intelligence (Dynamic Continuous Flow)" fill="var(--status-ok)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

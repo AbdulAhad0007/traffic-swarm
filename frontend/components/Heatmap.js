@@ -15,10 +15,10 @@ const WorldHeatmap = dynamic(() => import('@/components/WorldHeatmap'), {
 });
 
 const VIEWS = [
-  ['heatmap', '2D Heatmap', Layers, '#38bdf8'],
-  ['city3d', '3D City Grid', Building2, '#a855f7'],
-  ['world', 'World Map', Globe2, '#10b981'],
-  ['digital_twin', '3D Intersection', Box, '#f59e0b'],
+  ['heatmap', '2D Heatmap', Layers, 'var(--accent)'],
+  ['city3d', '3D City Grid', Building2, 'var(--accent-3)'],
+  ['world', 'World Map', Globe2, 'var(--status-ok)'],
+  ['digital_twin', '3D Intersection', Box, 'var(--status-warn)'],
 ];
 
 const ALL_VIEWS = VIEWS.map(([id]) => id);
@@ -215,7 +215,7 @@ export default function Heatmap({
       <div ref={boxRef} className={'heatmap' + (isFull ? ' is-full' : '')} style={viewMode === 'digital_twin' ? { padding: 0 } : undefined}>
         <div className="hm-head" style={viewMode === 'digital_twin' ? { padding: '14px 20px 10px', margin: 0 } : undefined}>
           <ViewTabs viewMode={viewMode} setViewMode={setViewMode} allowedViews={allowedViews} />
-          {title && <b style={{ fontSize: 13, color: '#f8fafc' }}>{title}</b>}
+          {title && <b style={{ fontSize: 13, color: 'var(--text-primary)' }}>{title}</b>}
           <span className="muted" style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
             sim t = {simTime != null ? `${Math.round(simTime)} s` : '—'}
           </span>
@@ -268,7 +268,7 @@ export default function Heatmap({
           {source === 'live_simulation' ? '● RADIANT THERMAL DENSITY' : 'HISTORICAL REPLAY'}
         </span>
 
-        {title && <b style={{ fontSize: 13, color: '#f8fafc' }}>{title}</b>}
+        {title && <b style={{ fontSize: 13, color: 'var(--text-primary)' }}>{title}</b>}
 
         <span className="muted" style={{ fontFamily: 'var(--font-mono)' }}>
           sim t = {simTime != null ? `${Math.round(simTime)} s` : '—'}
@@ -283,7 +283,7 @@ export default function Heatmap({
             onClick={() => setRadiantGlow(!radiantGlow)}
             title="Toggle Radiant Thermal Glow Corona"
           >
-            <Zap size={13} color={radiantGlow ? '#f59e0b' : 'currentColor'} />
+            <Zap size={13} color={radiantGlow ? 'var(--status-warn)' : 'currentColor'} />
             Thermal Glow {radiantGlow ? 'ON' : 'OFF'}
           </button>
           <button
@@ -292,7 +292,7 @@ export default function Heatmap({
             onClick={() => setShowCars(!showCars)}
             title="Toggle Moving Vehicle Markers"
           >
-            <Car size={13} color={showCars ? '#38bdf8' : 'currentColor'} />
+            <Car size={13} color={showCars ? 'var(--accent)' : 'currentColor'} />
             Vehicles {showCars ? 'ON' : 'OFF'}
           </button>
           <button
@@ -301,7 +301,7 @@ export default function Heatmap({
             onClick={() => setShowLights(!showLights)}
             title="Toggle Physical Signal Light Heads"
           >
-            <Lightbulb size={13} color={showLights ? '#10b981' : 'currentColor'} />
+            <Lightbulb size={13} color={showLights ? 'var(--status-ok)' : 'currentColor'} />
             Signals {showLights ? 'ON' : 'OFF'}
           </button>
           <button type="button" className="small" onClick={pz.zoomIn} title="Zoom in (or mouse wheel)"><ZoomIn size={13} /></button>
@@ -323,8 +323,8 @@ export default function Heatmap({
           height: isFull ? undefined : height,
           cursor: 'grab',
           borderRadius: 14,
-          background: '#070b13',
-          boxShadow: 'inset 0 0 40px rgba(0,0,0,0.9)',
+          background: 'var(--bg-sunken)',
+          boxShadow: 'inset 0 0 40px color-mix(in srgb, var(--shadow-color) 90%, transparent)',
         }}
         role="img"
         aria-label={`Radiant thermal congestion heatmap of ${layout.nodes.length} junctions`}
@@ -351,28 +351,28 @@ export default function Heatmap({
 
           {/* Urban City Blueprint Grid Pattern */}
           <pattern id="urbanBlocks" width="50" height="50" patternUnits="userSpaceOnUse">
-            <rect width="50" height="50" fill="#070c16" />
-            <rect x="3" y="3" width="44" height="44" fill="#0a101d" rx="3" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
+            <rect width="50" height="50" fill="var(--bg-sunken)" />
+            <rect x="3" y="3" width="44" height="44" fill="var(--bg-surface)" rx="3" stroke="color-mix(in srgb, var(--text-primary) 2%, transparent)" strokeWidth="0.5" />
           </pattern>
 
           {/* Radial Thermal Burst for Bottleneck Hotspots */}
           <radialGradient id="hotspotRed" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.95" />
-            <stop offset="40%" stopColor="#f97316" stopOpacity="0.75" />
-            <stop offset="75%" stopColor="#eab308" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#eab308" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--signal-red)" stopOpacity="0.95" />
+            <stop offset="40%" stopColor="var(--status-warn)" stopOpacity="0.75" />
+            <stop offset="75%" stopColor="var(--status-warn)" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
 
           <radialGradient id="hotspotOrange" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#f97316" stopOpacity="0.9" />
-            <stop offset="50%" stopColor="#eab308" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#eab308" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--status-warn)" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="var(--status-warn)" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
 
           <radialGradient id="hotspotYellow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#facc15" stopOpacity="0.8" />
-            <stop offset="60%" stopColor="#fde047" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#facc15" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--status-warn)" stopOpacity="0.8" />
+            <stop offset="60%" stopColor="var(--status-warn)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--status-warn)" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -383,7 +383,7 @@ export default function Heatmap({
         <path
           d={`M 0,${geo.H * 0.72} Q ${geo.W * 0.35},${geo.H * 0.65} ${geo.W * 0.55},${geo.H * 0.82} T ${geo.W},${geo.H * 0.74}`}
           fill="none"
-          stroke="#0f2238"
+          stroke="var(--bg-elevated)"
           strokeWidth="32"
           strokeLinecap="round"
           opacity="0.6"
@@ -401,7 +401,7 @@ export default function Heatmap({
               y1={pA[1]}
               x2={pB[0]}
               y2={pB[1]}
-              stroke="#131e2e"
+              stroke="var(--bg-surface)"
               strokeWidth={Math.max(6, geo.r * 1.2)}
               strokeLinecap="round"
             />
@@ -421,10 +421,10 @@ export default function Heatmap({
             // Thermal color spectrum: Yellow (low) -> Fiery Orange (medium) -> Radiant Crimson Red (heavy)
             const glowColor =
               q > 4 || occ > 0.4
-                ? '#ef4444' // Heavy Bottleneck
+                ? 'var(--signal-red)' // Heavy Bottleneck
                 : q > 1 || occ > 0.2
-                ? '#f97316' // Moderate Delay
-                : '#facc15'; // Free Flowing Energy
+                ? 'var(--status-warn)' // Moderate Delay
+                : 'var(--status-warn)'; // Free Flowing Energy
 
             const glowWidth = Math.max(12, geo.r * 2.2);
 
@@ -455,10 +455,10 @@ export default function Heatmap({
 
           const coreColor =
             q > 4 || occ > 0.4
-              ? '#ff2244'
+              ? 'var(--status-danger)'
               : q > 1 || occ > 0.2
-              ? '#fb923c'
-              : '#fde047';
+              ? 'var(--status-warn)'
+              : 'var(--status-warn)';
 
           return (
             <line
@@ -487,7 +487,7 @@ export default function Heatmap({
               y1={pA[1]}
               x2={pB[0]}
               y2={pB[1]}
-              stroke="#fffef0"
+              stroke="var(--warn-soft)"
               strokeWidth={Math.max(1.2, geo.r * 0.22)}
               opacity={0.7}
             />
@@ -543,10 +543,10 @@ export default function Heatmap({
           if (v.type === 'ambulance') {
             return (
               <g key={v.id} transform={`translate(${v.x}, ${v.y}) rotate(${v.angle})`}>
-                <circle r={8} fill="rgba(239, 68, 68, 0.6)">
+                <circle r={8} fill="color-mix(in srgb, var(--signal-red) 60%, transparent)">
                   <animate attributeName="r" values="6;12;6" dur="0.5s" repeatCount="indefinite" />
                 </circle>
-                <rect x={-6} y={-3.5} width={12} height={7} rx={2} fill="#ffffff" stroke="#ef4444" strokeWidth="1.2" />
+                <rect x={-6} y={-3.5} width={12} height={7} rx={2} fill="var(--text-primary)" stroke="var(--signal-red)" strokeWidth="1.2" />
               </g>
             );
           }
@@ -556,10 +556,10 @@ export default function Heatmap({
               cx={v.x}
               cy={v.y}
               r={Math.max(2, geo.r * 0.32)}
-              fill={v.isQueued ? '#ef4444' : '#ffffff'}
-              stroke="#070b14"
+              fill={v.isQueued ? 'var(--signal-red)' : 'var(--text-primary)'}
+              stroke="var(--bg-sunken)"
               strokeWidth={0.6}
-              filter="drop-shadow(0 0 3px rgba(255,255,255,0.8))"
+              filter="drop-shadow(0 0 3px color-mix(in srgb, var(--text-primary) 80%, transparent))"
             />
           );
         })}
@@ -593,9 +593,9 @@ export default function Heatmap({
                 cy={p[1]}
                 r={geo.r}
                 fill={nd ? 'none' : LEVEL_COLORS[lv] || LEVEL_COLORS.no_data}
-                stroke={selected === n.id ? '#ffffff' : '#070b14'}
+                stroke={selected === n.id ? 'var(--text-primary)' : 'var(--bg-sunken)'}
                 strokeWidth={selected === n.id ? 3 : 1.5}
-                filter={selected === n.id ? 'drop-shadow(0 0 10px #ffffff)' : undefined}
+                filter={selected === n.id ? 'drop-shadow(0 0 10px var(--text-primary))' : undefined}
               />
 
               {/* Node Label (e.g. J1..J81) */}
@@ -606,7 +606,7 @@ export default function Heatmap({
                 fontSize={Math.max(8, Math.min(11, geo.r * 0.85))}
                 fontWeight="700"
                 fontFamily="var(--font-mono)"
-                fill="#ffffff"
+                fill="var(--text-primary)"
                 pointerEvents="none"
               >
                 {n.id}
@@ -615,10 +615,10 @@ export default function Heatmap({
               {/* Physical Traffic Light Gantry */}
               {showLights && j && geo.nodeCount <= 36 && (
                 <g transform={`translate(${p[0] + geo.r + 2}, ${p[1] - 14})`} pointerEvents="none">
-                  <rect width={9} height={22} rx={2.5} fill="#080d17" stroke="#1e293b" strokeWidth={0.8} />
-                  <circle cx={4.5} cy={4} r={2.4} fill={!isGreen && !isYellow ? '#ef4444' : '#2d0f15'} />
-                  <circle cx={4.5} cy={11} r={2.4} fill={isYellow ? '#fbbf24' : '#2b210a'} />
-                  <circle cx={4.5} cy={18} r={2.4} fill={isGreen ? '#10b981' : '#092518'} />
+                  <rect width={9} height={22} rx={2.5} fill="var(--bg-sunken)" stroke="var(--bg-elevated)" strokeWidth={0.8} />
+                  <circle cx={4.5} cy={4} r={2.4} fill={!isGreen && !isYellow ? 'var(--signal-red)' : 'color-mix(in srgb, var(--status-danger) 16%, var(--bg-surface))'} />
+                  <circle cx={4.5} cy={11} r={2.4} fill={isYellow ? 'var(--status-warn)' : 'color-mix(in srgb, var(--status-warn) 16%, var(--bg-surface))'} />
+                  <circle cx={4.5} cy={18} r={2.4} fill={isGreen ? 'var(--status-ok)' : 'color-mix(in srgb, var(--status-ok) 16%, var(--bg-surface))'} />
                 </g>
               )}
             </g>
@@ -680,8 +680,8 @@ export default function Heatmap({
 
               <div className="hm-fc-stat">
                 <span className="hm-fc-stat-lbl">Halting Queue</span>
-                <span className="hm-fc-stat-val" style={{ color: q > 4 ? '#ef4444' : q > 1 ? '#f59e0b' : '#34d399' }}>
-                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: '#94a3b8' }}>veh</span>
+                <span className="hm-fc-stat-val" style={{ color: q > 4 ? 'var(--signal-red)' : q > 1 ? 'var(--status-warn)' : 'var(--status-ok)' }}>
+                  {fmt(q, 0)} <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-secondary)' }}>veh</span>
                 </span>
               </div>
 
@@ -696,7 +696,7 @@ export default function Heatmap({
                       className="hm-fc-progress-bar"
                       style={{
                         width: `${Math.min(100, Math.max(2, occPct))}%`,
-                        background: occPct > 60 ? '#ef4444' : occPct > 30 ? '#f59e0b' : '#10b981',
+                        background: occPct > 60 ? 'var(--signal-red)' : occPct > 30 ? 'var(--status-warn)' : 'var(--status-ok)',
                       }}
                     />
                   </div>
@@ -731,28 +731,28 @@ export default function Heatmap({
             <i
               style={{
                 background: l === 'no_data' ? 'transparent' : LEVEL_COLORS[l],
-                border: l === 'no_data' ? '1px dashed #8a94a6' : 'none',
+                border: l === 'no_data' ? '1px dashed var(--text-secondary)' : 'none',
               }}
             />
             {l.replace('_', ' ')} ({counts[l] || 0})
           </span>
         ))}
         {totalQueue > 0 && (
-          <span style={{ color: '#ef4444', fontWeight: 600 }}>
+          <span style={{ color: 'var(--signal-red)', fontWeight: 600 }}>
             🛑 Total Halting Queue: {totalQueue} veh
           </span>
         )}
-        <span style={{ color: '#38bdf8' }}>
+        <span style={{ color: 'var(--accent)' }}>
           🌐 Scaled Network: {geo.nodeCount} Signal Nodes ({layout.links.length} Links)
         </span>
       </div>
 
       {/* Selected Junction Inspector & Quick 3D Launcher */}
       {info ? (
-        <div className="detail" style={{ borderLeft: '3px solid #38bdf8', alignItems: 'center' }}>
+        <div className="detail" style={{ borderLeft: '3px solid var(--accent)', alignItems: 'center' }}>
           <div>
             <b>{selected}</b>
-            <span style={{ marginLeft: 8, fontSize: 11, color: '#38bdf8', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
               NODE TELEMETRY
             </span>
           </div>
@@ -767,14 +767,14 @@ export default function Heatmap({
           </span>
           <span>
             Signal State:{' '}
-            <b style={{ color: info.phase % 2 === 0 ? '#10b981' : '#fbbf24' }}>
+            <b style={{ color: info.phase % 2 === 0 ? 'var(--status-ok)' : 'var(--status-warn)' }}>
               Phase {info.phase ?? '—'} ({info.phase % 2 === 0 ? 'GREEN' : 'YELLOW/CLEAR'})
             </b>
           </span>
           {allowedViews.includes('digital_twin') && <button
             type="button"
             className="small"
-            style={{ marginLeft: 'auto', background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}
+            style={{ marginLeft: 'auto', background: 'linear-gradient(135deg, var(--accent), var(--accent))' }}
             onClick={() => setViewMode('digital_twin')}
           >
             <Box size={13} />
@@ -788,11 +788,11 @@ export default function Heatmap({
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
             {allowedViews.includes('city3d') && <button type="button" className="small" onClick={() => setViewMode('city3d')}>
-              <Building2 size={13} color="#a855f7" />
+              <Building2 size={13} color="var(--accent-3)" />
               3D City Grid
             </button>}
             {allowedViews.includes('world') && <button type="button" className="small" onClick={() => setViewMode('world')}>
-              <Globe2 size={13} color="#10b981" />
+              <Globe2 size={13} color="var(--status-ok)" />
               World Map
             </button>}
           </div>

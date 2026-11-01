@@ -1,4 +1,5 @@
 import './globals.css';
+import './styles/system.css';
 import { themeBootScript } from '@/lib/themeBoot';
 
 export const metadata = {

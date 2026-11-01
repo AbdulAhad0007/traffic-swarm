@@ -114,7 +114,7 @@ export default function Sidebar() {
           {!isCollapsed ? (
             <div className="sidebar-brand">
               <div className="brand-icon-box">
-                <Car size={18} color="#38bdf8" />
+                <Car size={18} color="var(--accent)" />
               </div>
               <div className="brand-text">
                 <span className="brand-title">TRAFFIC SWARM</span>
@@ -123,7 +123,7 @@ export default function Sidebar() {
             </div>
           ) : (
             <div className="brand-icon-box collapsed-icon" title="Traffic Swarm Intelligence">
-              <Car size={18} color="#38bdf8" />
+              <Car size={18} color="var(--accent)" />
             </div>
           )}
 
@@ -168,7 +168,7 @@ export default function Sidebar() {
                 <div className="nav-icon-wrap">
                   <Icon
                     size={18}
-                    color={isActive ? '#38bdf8' : 'currentColor'}
+                    color={isActive ? 'var(--accent)' : 'currentColor'}
                   />
                 </div>
                 {!isCollapsed && (
@@ -190,7 +190,7 @@ export default function Sidebar() {
             title={isCollapsed ? 'How Swarm Intelligence Works' : undefined}
           >
             <div className="nav-icon-wrap">
-              <BookOpen size={18} color="#a855f7" />
+              <BookOpen size={18} color="var(--accent-3)" />
             </div>
             {!isCollapsed && (
               <>
@@ -205,14 +205,14 @@ export default function Sidebar() {
         {!isCollapsed && (
           <div className="sidebar-footer">
             <div className="telemetry-pill">
-              <Cpu size={14} color="#38bdf8" />
+              <Cpu size={14} color="var(--accent)" />
               <span>PSO + ACO</span>
-              <b style={{ marginLeft: 'auto', color: '#10b981' }}>OK</b>
+              <b style={{ marginLeft: 'auto', color: 'var(--status-ok)' }}>OK</b>
             </div>
             <div className="telemetry-pill">
-              <ShieldCheck size={14} color="#10b981" />
+              <ShieldCheck size={14} color="var(--status-ok)" />
               <span>Safety Gate</span>
-              <b style={{ marginLeft: 'auto', color: '#10b981' }}>HARD</b>
+              <b style={{ marginLeft: 'auto', color: 'var(--status-ok)' }}>HARD</b>
             </div>
             <div className="sidebar-version-text">
               Eclipse SUMO 1.27.1 Microscopic Engine

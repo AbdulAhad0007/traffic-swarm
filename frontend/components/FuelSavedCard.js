@@ -37,12 +37,12 @@ export default function FuelSavedCard({
 
   if (!measured) {
     return compact ? (
-      <div className="fuel-saved-compact"><div className="fuel-header"><Fuel size={16} color="#64748b" /><b>Fuel:</b><span className="muted">pending</span></div></div>
+      <div className="fuel-saved-compact"><div className="fuel-header"><Fuel size={16} color="var(--text-muted)" /><b>Fuel:</b><span className="muted">pending</span></div></div>
     ) : (
       <div className="fuel-saved-card pending">
         <div className="fuel-card-header">
           <div className="fuel-title-group">
-            <div className="fuel-icon-wrap"><Hourglass size={20} color="#64748b" /></div>
+            <div className="fuel-icon-wrap"><Hourglass size={20} color="var(--text-muted)" /></div>
             <div>
               <h4 className="fuel-card-title">{title}</h4>
               <p className="fuel-card-sub">{pendingText}</p>
@@ -63,7 +63,7 @@ export default function FuelSavedCard({
   const co2Pct = hasCo2 ? ((baselineCo2Mg - swarmCo2Mg) / baselineCo2Mg) * 100 : fuelPct;
   const saves = fuelDiffMg >= 0;
   const Trend = saves ? TrendingDown : TrendingUp;
-  const tone = saves ? '#10b981' : '#f43f5e';
+  const tone = saves ? 'var(--status-ok)' : 'var(--status-danger)';
   const burnPct = (swarmFuelMg / baselineFuelMg) * 100;
 
   if (compact) {
@@ -123,7 +123,7 @@ export default function FuelSavedCard({
 
         <div className="fuel-metric-box">
           <div className="metric-box-top">
-            <Leaf size={16} color="#38bdf8" />
+            <Leaf size={16} color="var(--accent)" />
             <span>{co2Kg >= 0 ? 'CO₂ PREVENTED' : 'EXTRA CO₂'}</span>
           </div>
           <div className="metric-box-num text-cyan">
@@ -136,7 +136,7 @@ export default function FuelSavedCard({
 
         <div className="fuel-metric-box">
           <div className="metric-box-top">
-            <IndianRupee size={16} color="#f59e0b" />
+            <IndianRupee size={16} color="var(--status-warn)" />
             <span>{saves ? 'COST SAVED' : 'EXTRA COST'}</span>
           </div>
           <div className="metric-box-num text-amber">
@@ -147,7 +147,7 @@ export default function FuelSavedCard({
 
         <div className="fuel-metric-box">
           <div className="metric-box-top">
-            <Gauge size={16} color="#a78bfa" />
+            <Gauge size={16} color="var(--accent-3-soft)" />
             <span>FUEL BURNT</span>
           </div>
           <div className="metric-box-num text-purple">

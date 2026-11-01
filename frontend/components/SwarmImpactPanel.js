@@ -21,8 +21,8 @@ function Bar({ label, fixed, swarm, unit }) {
   return (
     <div className="impact-bar">
       <div className="impact-bar-label">{label}</div>
-      <div className="impact-bar-row"><span>Static 30 s</span><div><i style={{ width: `${(fixed / max) * 100}%`, background: '#f43f5e' }} /></div><b>{n(fixed)} {unit}</b></div>
-      <div className="impact-bar-row"><span>Swarm</span><div><i style={{ width: `${(swarm / max) * 100}%`, background: '#10b981' }} /></div><b>{n(swarm)} {unit}</b></div>
+      <div className="impact-bar-row"><span>Static 30 s</span><div><i style={{ width: `${(fixed / max) * 100}%`, background: 'var(--status-danger)' }} /></div><b>{n(fixed)} {unit}</b></div>
+      <div className="impact-bar-row"><span>Swarm</span><div><i style={{ width: `${(swarm / max) * 100}%`, background: 'var(--status-ok)' }} /></div><b>{n(swarm)} {unit}</b></div>
     </div>
   );
 }
@@ -43,14 +43,14 @@ export default function SwarmImpactPanel({ fuel, emergency, simSeconds, cityName
         </div>
       </div>
       <div className="impact-grid">
-        <Tile icon={Fuel} color="#a855f7" label="Fuel saved" value={n(fuel.liters_fuel_saved, 2)} unit=" L"
+        <Tile icon={Fuel} color="var(--accent-3)" label="Fuel saved" value={n(fuel.liters_fuel_saved, 2)} unit=" L"
           sub={`${n(fuel.idle_seconds_saved / 3600, 1)} engine-hours of idling avoided`} />
-        <Tile icon={Leaf} color="#10b981" label="CO₂ prevented" value={n(fuel.co2_kg_prevented, 2)} unit=" kg" sub={`litres × ${FUEL.co2_kg_per_l} kg/L`} />
-        <Tile icon={IndianRupee} color="#fbbf24" label="Money saved" value={`₹${n(fuel.rupees_saved, 0)}`} unit="" sub={`litres × ₹${FUEL.inr_per_l}/L`} />
-        <Tile icon={TrendingDown} color="#38bdf8" label="Avg delay reduction" value={n(fuel.average_delay_reduction_pct, 1)} unit=" %" sub="idle s per junction passage" />
-        <Tile icon={OctagonX} color="#f59e0b" label="Stops avoided" value={n(Math.max(0, fuel.stops_avoided), 0)} unit=""
+        <Tile icon={Leaf} color="var(--status-ok)" label="CO₂ prevented" value={n(fuel.co2_kg_prevented, 2)} unit=" kg" sub={`litres × ${FUEL.co2_kg_per_l} kg/L`} />
+        <Tile icon={IndianRupee} color="var(--status-warn)" label="Money saved" value={`₹${n(fuel.rupees_saved, 0)}`} unit="" sub={`litres × ₹${FUEL.inr_per_l}/L`} />
+        <Tile icon={TrendingDown} color="var(--accent)" label="Avg delay reduction" value={n(fuel.average_delay_reduction_pct, 1)} unit=" %" sub="idle s per junction passage" />
+        <Tile icon={OctagonX} color="var(--status-warn)" label="Stops avoided" value={n(Math.max(0, fuel.stops_avoided), 0)} unit=""
           sub={`${n(fuel.stops_per_passage.fixed * 100, 0)}% → ${n(fuel.stops_per_passage.swarm * 100, 0)}% of passages stop`} />
-        <Tile icon={Siren} color="#f43f5e" label="Ambulance signal delay"
+        <Tile icon={Siren} color="var(--status-danger)" label="Ambulance signal delay"
           value={emergency ? `${emergency.swarm.delay_s}s` : '—'} unit=""
           sub={emergency ? `static timer: ${emergency.fixed.delay_s}s${emergency.fixed.done ? '' : ' (still en route)'}` : 'trigger the corridor on the map'} />
       </div>
