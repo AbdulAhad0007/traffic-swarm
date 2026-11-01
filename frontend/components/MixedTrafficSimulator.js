@@ -233,7 +233,7 @@ export default function MixedTrafficSimulator() {
       {/* Fuel & Delay Impact Highlights */}
       {on('impact-highlights') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--status-ok) 20%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Daily Fuel Saved</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', }}>Daily Fuel Saved</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-ok)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Fuel size={20} /> {fuelSavedPerDayLiters.toLocaleString()} Liters / day
           </div>
@@ -241,7 +241,7 @@ export default function MixedTrafficSimulator() {
         </div>
 
         <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 20%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Average Delay Reduction</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', }}>Average Delay Reduction</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>
             -{Math.round(((comparisonData[0].fixed - comparisonData[0].swarm) / comparisonData[0].fixed) * 100)}% Time Saved
           </div>
@@ -249,7 +249,7 @@ export default function MixedTrafficSimulator() {
         </div>
 
         <div style={{ background: 'color-mix(in srgb, var(--bg-surface) 70%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-3) 20%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Idling CO2 Cut</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', }}>Idling CO2 Cut</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent-3)', marginTop: 4 }}>
             {(fuelSavedPerDayLiters * 2.31 / 1000).toFixed(1)} Tons / day
           </div>

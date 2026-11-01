@@ -104,7 +104,7 @@ export default function SwarmCallsPanel({ jobId, runId, isLive = true }) {
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 18 }}>
           <div style={{ padding: 12, borderRadius: 8, background: 'color-mix(in srgb, var(--bg-elevated) 50%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Success Rate</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Success Rate</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--status-ok)', marginTop: 4 }}>
               {summary.response_correct_rate != null ? `${Math.round(summary.response_correct_rate * 100)}%` : 'Active'}
             </div>
@@ -112,7 +112,7 @@ export default function SwarmCallsPanel({ jobId, runId, isLive = true }) {
           </div>
 
           <div style={{ padding: 12, borderRadius: 8, background: 'color-mix(in srgb, var(--bg-elevated) 50%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Response Latency (p50)</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Response Latency (p50)</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>
               {summary.response_latency_s?.p50 != null ? `${fmt(summary.response_latency_s.p50, 2)} s` : '0 s'}
             </div>
@@ -122,7 +122,7 @@ export default function SwarmCallsPanel({ jobId, runId, isLive = true }) {
           </div>
 
           <div style={{ padding: 12, borderRadius: 8, background: 'color-mix(in srgb, var(--bg-elevated) 50%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Main Delay Source</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Main Delay Source</div>
             <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--status-warn)', marginTop: 4, whiteEmpty: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
               {Object.keys(summary.delay_sources || {})[0] || 'Zero latency'}
             </div>
@@ -132,7 +132,7 @@ export default function SwarmCallsPanel({ jobId, runId, isLive = true }) {
           </div>
 
           <div style={{ padding: 12, borderRadius: 8, background: 'color-mix(in srgb, var(--bg-elevated) 50%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 6%, transparent)' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fuel & Congestion Saved</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Fuel & Congestion Saved</div>
             <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--accent-3)', marginTop: 4 }}>
               {summary.announced_vehicles_without_stop_share != null ? `${Math.round(summary.announced_vehicles_without_stop_share * 100 * 0.45)}% stops cut` : 'Tracking'}
             </div>

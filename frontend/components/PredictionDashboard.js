@@ -222,7 +222,7 @@ export default function PredictionDashboard() {
       {/* KPI Stats Grid */}
       {on('kpi-cards') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Forecasted Queue (Next {horizon}m)</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Forecasted Queue (Next {horizon}m)</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-warn)', marginTop: 4 }}>
             {seriesData[seriesData.length - 1]?.predicted} vehicles
           </div>
@@ -230,7 +230,7 @@ export default function PredictionDashboard() {
         </div>
 
         <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Swarm AI Optimized Queue</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Swarm AI Optimized Queue</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--status-ok)', marginTop: 4 }}>
             {seriesData[seriesData.length - 1]?.swarmOptimized} vehicles
           </div>
@@ -240,7 +240,7 @@ export default function PredictionDashboard() {
         </div>
 
         <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Fuel Waste Prevented</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Fuel Waste Prevented</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent-3)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
             <Fuel size={20} /> 24.8 Liters / hr
           </div>
@@ -250,7 +250,7 @@ export default function PredictionDashboard() {
         </div>
 
         <div style={{ background: 'color-mix(in srgb, var(--bg-elevated) 60%, transparent)', border: '1px solid color-mix(in srgb, var(--text-primary) 8%, transparent)', borderRadius: 10, padding: 18 }}>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Model Prediction Accuracy</div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>Model Prediction Accuracy</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--accent)', marginTop: 4 }}>
             94.2% (MAE 1.8 veh)
           </div>
