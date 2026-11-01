@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { lab, fmt, KPIS, colorOf } from '@/lib/api';
 import Heatmap from '@/components/Heatmap';
 import FuelSavedCard from '@/components/FuelSavedCard';
+import { useSections } from '@/components/SiteConfigProvider';
 import { useLabOptions, useJobs, useAreas, JobForm, JobList, useLive, EmergencyPanel, routeInfo } from '@/components/LiveLab';
 
 // Frame of a replay at simulated time t (latest frame at or before t) -> {tls: {...}}.
@@ -16,6 +17,8 @@ function frameAt(rp, t) {
 }
 
 export default function BeforeAfter() {
+  const { on } = useSections('before-after');
+  const showLive = on('live-comparison'), showReplay = on('replay');
   const [opt, err] = useLabOptions(); const [jobs, reload] = useJobs(); const [areas] = useAreas();
   const [sel, setSel] = useState(null);
 
@@ -35,26 +38,29 @@ export default function BeforeAfter() {
   }, [sel, done]);
   const maxT = useMemo(() => Math.max(0, ...Object.values(replay).map(r => r.times?.[r.times.length - 1] || 0)), [replay]);
   const ctrls = job?.spec?.controllers || [];
+  // Replay exists only for a finished job; with one view off the other is used without changing the saved choice.
+  const view = done && showReplay && (mode === 'replay' || !showLive) ? 'replay' : 'live';
+  const showSplit = view === 'replay' || showLive;
   return <>
-    <section className="panel"><h2>Before / after demonstration</h2>
+    {on('demo-form') && <section className="panel"><h2>Before / after demonstration</h2>
       {err ? <div className="error">{err}</div> : <JobForm opt={opt} kind="demo" areas={areas} onCreated={j => { setSel(j.id); reload() }} />}
       <p className="muted small">The scenario is prepared once; each controller then runs in its own SUMO process (own TraCI port, output directory and log). Live views show each run&#39;s own simulated time; replay of a completed demo is aligned by simulated time.</p>
-    </section>
-    <section className="panel"><h2>Demo jobs</h2><JobList jobs={jobs} selected={sel} onSelect={setSel} filter={j => j.spec.kind === 'demo'} areas={areas} /></section>
-    {job && live && <section className="panel">
+    </section>}
+    {on('demo-jobs') && <section className="panel"><h2>Demo jobs</h2><JobList jobs={jobs} selected={sel} onSelect={setSel} filter={j => j.spec.kind === 'demo'} areas={areas} /></section>}
+    {job && live && (showLive || showReplay || on('emergency-panels') || on('fuel-card') || on('kpi-table')) && <section className="panel">
       <div className="toolbar"><h2>{ctrls[0]} → {ctrls[1]}</h2>
-        {done && <div className="tabs"><button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Final live state</button><button className={mode === 'replay' ? 'on' : ''} onClick={() => setMode('replay')}>Replay</button></div>}</div>
+        {done && showLive && showReplay && <div className="tabs"><button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Final live state</button><button className={mode === 'replay' ? 'on' : ''} onClick={() => setMode('replay')}>Replay</button></div>}</div>
       <div className="meta"><span>network <b>{job.spec.network}</b></span><span>scenario <b>{job.spec.scenario}</b></span><span>seed <b>{job.spec.seed}</b></span><span>ambulances <b>{job.spec.ambulances}</b></span><span>demand: identical route file</span></div>
-      {mode === 'live' ? <div className={'sync ' + (live.time_gap_s > 10 ? 'warn' : '')}>{live.synchronization}{live.time_gap_s != null && ` · simulated times differ by ${fmt(live.time_gap_s, 0)} s`}</div>
-        : <div className="sync">Historical replay aligned by simulated time · t = {Math.round(t)} s<input type="range" min="0" max={maxT} step="5" value={t} onChange={e => setT(Number(e.target.value))} /></div>}
-      <div className="split">{ctrls.map(c => { const p = live.parts[c]; const fr = mode === 'replay' ? frameAt(replay[c], t) : null; const r = routeInfo(p?.emergency);
-        return <div key={c}><Heatmap layout={live.layout} network={job.spec.network} junctions={fr ? fr.junctions : p?.state?.junctions} source={fr ? 'historical_replay' : 'live_simulation'}
+      {showSplit && (view === 'live' ? <div className={'sync ' + (live.time_gap_s > 10 ? 'warn' : '')}>{live.synchronization}{live.time_gap_s != null && ` · simulated times differ by ${fmt(live.time_gap_s, 0)} s`}</div>
+        : <div className="sync">Historical replay aligned by simulated time · t = {Math.round(t)} s<input type="range" min="0" max={maxT} step="5" value={t} onChange={e => setT(Number(e.target.value))} /></div>)}
+      <div className="split">{ctrls.map(c => { const p = live.parts[c]; const fr = view === 'replay' ? frameAt(replay[c], t) : null; const r = routeInfo(p?.emergency);
+        return <div key={c}>{showSplit && <><Heatmap layout={live.layout} network={job.spec.network} junctions={fr ? fr.junctions : p?.state?.junctions} source={fr ? 'historical_replay' : 'live_simulation'}
           simTime={fr ? fr.time : p?.state?.sim_time_s} title={c} height={300} route={r.route} routeStatus={r.status} />
-          <div className="kpis"><span>status <b>{p?.state?.status || 'waiting'}</b></span><span>arrived <b>{p?.state?.vehicles_arrived ?? '—'}</b></span><span>wall <b>{fmt(p?.state?.wall_elapsed_s, 0)} s</b></span></div>
-          <EmergencyPanel em={p?.emergency} onSelect={() => { }} /></div> })}</div>
+          <div className="kpis"><span>status <b>{p?.state?.status || 'waiting'}</b></span><span>arrived <b>{p?.state?.vehicles_arrived ?? '—'}</b></span><span>wall <b>{fmt(p?.state?.wall_elapsed_s, 0)} s</b></span></div></>}
+          {on('emergency-panels') && <EmergencyPanel em={p?.emergency} onSelect={() => { }} />}</div> })}</div>
       {result && (
         <>
-          <div style={{ marginTop: 18 }}>
+          {on('fuel-card') && <div style={{ marginTop: 18 }}>
             <FuelSavedCard
               baselineFuelMg={result.controllers?.[ctrls[0]]?.fuel_mg}
               swarmFuelMg={result.controllers?.[ctrls[1]]?.fuel_mg}
@@ -64,8 +70,8 @@ export default function BeforeAfter() {
               compareLabel={ctrls[1]}
               title={`Fuel & emissions · ${ctrls[1]} vs ${ctrls[0]}`}
             />
-          </div>
-          <KpiTable result={result} />
+          </div>}
+          {on('kpi-table') && <KpiTable result={result} />}
         </>
       )}
     </section>}

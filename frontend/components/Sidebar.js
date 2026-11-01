@@ -21,19 +21,22 @@ import {
   BookOpen
 } from 'lucide-react';
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
+import { useSiteConfig } from '@/components/SiteConfigProvider';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Overview', icon: Activity, tag: 'CORE' },
-  { href: '/ghaziabad', label: 'Signal Map', icon: MapPin, tag: 'OSM' },
-  { href: '/live', label: 'Live Lab', icon: Radio, tag: 'LIVE' },
-  { href: '/demo', label: 'Before / After', icon: GitCompare, tag: 'DUAL' },
-  { href: '/controllers', label: 'Controllers', icon: SlidersHorizontal, tag: 'EVAL' },
-  { href: '/prediction', label: 'Prediction', icon: TrendingUp, tag: 'AI' },
-  { href: '/mixed', label: 'Mixed Traffic', icon: Layers, tag: 'MIX' },
+  { href: '/', label: 'Overview', icon: Activity, tag: 'CORE', module: 'overview' },
+  { href: '/ghaziabad', label: 'Signal Map', icon: MapPin, tag: 'OSM', module: 'signal-map' },
+  { href: '/live', label: 'Live Lab', icon: Radio, tag: 'LIVE', module: 'live-lab' },
+  { href: '/demo', label: 'Before / After', icon: GitCompare, tag: 'DUAL', module: 'before-after' },
+  { href: '/controllers', label: 'Controllers', icon: SlidersHorizontal, tag: 'EVAL', module: 'controllers' },
+  { href: '/prediction', label: 'Prediction', icon: TrendingUp, tag: 'AI', module: 'prediction' },
+  { href: '/mixed', label: 'Mixed Traffic', icon: Layers, tag: 'MIX', module: 'mixed-traffic' },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const siteConfig = useSiteConfig();
+  const moduleOn = slug => siteConfig?.modules[slug]?.enabled === true;
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -153,7 +156,7 @@ export default function Sidebar() {
 
         {/* Navigation Links */}
         <nav className="sidebar-nav">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, tag }) => {
+          {NAV_ITEMS.filter(item => moduleOn(item.module)).map(({ href, label, icon: Icon, tag }) => {
             const isActive = pathname === href;
             return (
               <Link
@@ -180,7 +183,7 @@ export default function Sidebar() {
               </Link>
             );
           })}
-          <button
+          {moduleOn('how-it-works') && <button
             type="button"
             className="sidebar-nav-item sidebar-explainer-btn"
             onClick={() => { setExplainerOpen(true); setMobileOpen(false); }}
@@ -195,7 +198,7 @@ export default function Sidebar() {
                 <span className="nav-tag">VIVA</span>
               </>
             )}
-          </button>
+          </button>}
         </nav>
 
         {/* Bottom System Telemetry Widget */}

@@ -29,6 +29,7 @@ import {
 } from 'recharts';
 import { SUPPORTED_CITIES } from '@/lib/cityData';
 import RichDropdown from '@/components/RichDropdown';
+import { useSections } from '@/components/SiteConfigProvider';
 
 const VEHICLE_TYPES = [
   { id: 'tw', label: 'Motorcycles & Scooters', icon: '🏍️', defaultPct: 42, color: '#38bdf8', pcu: 0.5, desc: 'High acceleration & sublane filtering' },
@@ -38,6 +39,7 @@ const VEHICLE_TYPES = [
 ];
 
 export default function MixedTrafficSimulator() {
+  const { on } = useSections('mixed-traffic');
   const [selectedCityId, setSelectedCityId] = useState('delhi');
   const [rickshawBikeBias, setRickshawBikeBias] = useState(64); // Combined 2W + 3W %
   const [trafficVolume, setTrafficVolume] = useState(3200); // Vehicles / hour / corridor
@@ -135,7 +137,7 @@ export default function MixedTrafficSimulator() {
             </p>
           </div>
 
-          <div style={{ minWidth: 200, maxWidth: 280, flex: '1 1 200px' }}>
+          {on('city-selector') && <div style={{ minWidth: 200, maxWidth: 280, flex: '1 1 200px' }}>
             <RichDropdown
               options={cityOptions}
               items={cityOptions}
@@ -144,18 +146,18 @@ export default function MixedTrafficSimulator() {
               icon={Activity}
               label="Selected City"
             />
-          </div>
+          </div>}
         </div>
       </div>
 
       {/* Interactive Sliders for Vehicle Ratios */}
-      <div style={{
+      {(on('composition-controls') || on('fleet-breakdown')) && <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
         gap: 20,
         marginBottom: 24
       }}>
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+        {on('composition-controls') && <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 16px 0', fontSize: '1rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 8 }}>
             <SlidersHorizontal size={16} /> Indian Traffic Composition Controls
           </h3>
@@ -198,10 +200,10 @@ export default function MixedTrafficSimulator() {
               <span>Heavy Rush Hour</span>
             </div>
           </div>
-        </div>
+        </div>}
 
         {/* Vehicle Distribution Pie Chart */}
-        <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
+        {on('fleet-breakdown') && <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 20 }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: '#10b981' }}>
             Current Fleet Breakdown in {city.name}
           </h3>
@@ -225,11 +227,11 @@ export default function MixedTrafficSimulator() {
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </div>}
+      </div>}
 
       {/* Fuel & Delay Impact Highlights */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+      {on('impact-highlights') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 10, padding: 18 }}>
           <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase' }}>Daily Fuel Saved</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#10b981', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -253,10 +255,10 @@ export default function MixedTrafficSimulator() {
           </div>
           <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Eliminating stop-and-go acceleration</div>
         </div>
-      </div>
+      </div>}
 
       {/* Comparison Graph */}
-      <div style={{
+      {on('comparison-graph') && <div style={{
         background: 'rgba(15, 23, 42, 0.8)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 12,
@@ -287,7 +289,7 @@ export default function MixedTrafficSimulator() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

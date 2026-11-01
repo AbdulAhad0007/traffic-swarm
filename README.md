@@ -1,6 +1,6 @@
 # Traffic Swarm Intelligence
 
-Simulation-first final-year B.Tech CSE project based on the supplied technical report. The system models a 3x3 network as nine cooperating intersection agents (J1–J9), uses a shared traffic-swarm blackboard/digital pheromone map, hybrid PSO+ACO signal optimization, safety gating, optional pheromone routing, reproducible scenario experiments, a Spring Boot orchestration API, MySQL experiment storage, and a React dashboard.
+Simulation-first final-year B.Tech CSE project based on the supplied technical report. The system models a 3x3 network as nine cooperating intersection agents (J1–J9), uses a shared traffic-swarm blackboard/digital pheromone map, hybrid PSO+ACO signal optimization, safety gating, optional pheromone routing, reproducible scenario experiments, a Spring Boot orchestration API, PostgreSQL (Supabase) experiment storage, and a Next.js dashboard.
 
 ## Phases
 1. Foundation/contracts — Python, Java, React, Docker structure and APIs.
@@ -18,7 +18,7 @@ Simulation-first final-year B.Tech CSE project based on the supplied technical r
 See `FINAL_RELEASE_STATUS.md` for the exact verification boundary. The source implementation is complete, while SUMO/Maven/npm runtime checks depend on external tools that are not installed in the current build environment.
 
 ## Run
-Install SUMO (including `sumo`, `netconvert`, and Python TraCI bindings), Java 21, Maven, Node/npm and Docker. Start MySQL with `docker compose up -d mysql`.
+Install SUMO (including `sumo`, `netconvert`, and Python TraCI bindings), Java 21, Maven, Node/npm and Docker. The database is hosted on Supabase; set `DB_URL`, `DB_USER` and `DB_PASSWORD` for the backend.
 
 Optimizer: `cd optimizer && python -m uvicorn app.main:app --reload --port 8001`
 Backend: `cd backend && mvn spring-boot:run`
@@ -45,6 +45,9 @@ See `docs/IMPLEMENTATION_STATUS.md` for what Phase 1 changed, measured results a
 
 ### Evaluation matrix and statistics
 Method: `docs/RESEARCH_METHODOLOGY.md`. Run `python -m experiments.tools.evaluate_matrix run --stage core --workers 4` (stages: core, ablation, emergency, mixed; check progress with `status`), then `python -m experiments.tools.analyze_evaluation`. The report goes to `experiments/reports/<matrix>/`. Results are preliminary until the matrix status shows every planned cell completed.
+
+### Admin panel
+`/admin` turns the eight public modules and their sections on or off. Setup, environment variables and deployment: `docs/ADMIN_PANEL_DEPLOYMENT.md`. Tests: `cd frontend && npm run build && npm test`.
 
 ## Research integrity
 The project does not ship fabricated KPI improvements. Research-paper percentages in the supplied report are scenario-specific literature results; this implementation is intended to measure its own SUMO results. Safety constraints take precedence over optimization.

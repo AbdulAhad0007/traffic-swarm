@@ -1,5 +1,4 @@
 import './globals.css';
-import Sidebar from '@/components/Sidebar';
 
 export const metadata = {
   title: 'Traffic Swarm Intelligence — Adaptive Command Lab',
@@ -17,16 +16,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>
-        <div className="app-shell">
-          <Sidebar />
-          <div className="main-content-area">
-            <main>
-              {children}
-            </main>
-          </div>
-        </div>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

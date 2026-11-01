@@ -29,8 +29,10 @@ import {
 } from 'recharts';
 import { SUPPORTED_CITIES, CITY_INTERSECTIONS } from '@/lib/cityData';
 import RichDropdown from '@/components/RichDropdown';
+import { useSections } from '@/components/SiteConfigProvider';
 
 export default function PredictionDashboard() {
+  const { on } = useSections('prediction');
   const [selectedCityId, setSelectedCityId] = useState('ghaziabad');
   const [horizon, setHorizon] = useState(15); // 5, 15, 30 minutes
   const [selectedJunctionIdx, setSelectedJunctionIdx] = useState(0);
@@ -143,7 +145,7 @@ export default function PredictionDashboard() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          {on('forecast-controls') && <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ minWidth: 180, maxWidth: 240, flex: '1 1 180px' }}>
               <RichDropdown
                 options={cityOptions}
@@ -183,12 +185,12 @@ export default function PredictionDashboard() {
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
               {isPlaying ? 'Pause Feed' : 'Resume Feed'}
             </button>
-          </div>
+          </div>}
         </div>
       </div>
 
       {/* Corridor & Intersection Selector Tabs */}
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 20 }}>
+      {on('junction-selector') && <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 20 }}>
         {junctions.map((j, idx) => (
           <button
             key={j.id}
@@ -215,10 +217,10 @@ export default function PredictionDashboard() {
             </span>
           </button>
         ))}
-      </div>
+      </div>}
 
       {/* KPI Stats Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+      {on('kpi-cards') && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
         <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10, padding: 18 }}>
           <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Forecasted Queue (Next {horizon}m)</div>
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: '#f59e0b', marginTop: 4 }}>
@@ -254,10 +256,10 @@ export default function PredictionDashboard() {
           </div>
           <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>Ridge AR + Adaptive Swarm Predictor</div>
         </div>
-      </div>
+      </div>}
 
       {/* Main Real-Time Graph */}
-      <div style={{
+      {on('queue-graph') && <div style={{
         background: 'rgba(15, 23, 42, 0.8)',
         border: '1px solid rgba(255,255,255,0.08)',
         borderRadius: 12,
@@ -319,10 +321,10 @@ export default function PredictionDashboard() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </div>}
 
       {/* Predictive Signal Adjustment Strategy */}
-      <div style={{
+      {on('preemptive-action') && <div style={{
         background: 'rgba(30, 41, 59, 0.4)',
         border: '1px solid rgba(56, 189, 248, 0.15)',
         borderRadius: 10,
@@ -338,7 +340,7 @@ export default function PredictionDashboard() {
           extend green by <b style={{ color: '#10b981' }}>14 seconds</b>, allowing the entire platoon to pass without a single stop.
           Estimated fuel saved for this wave alone: <b style={{ color: '#a855f7' }}>1.4 Liters of fuel</b>.
         </p>
-      </div>
+      </div>}
     </div>
   );
 }

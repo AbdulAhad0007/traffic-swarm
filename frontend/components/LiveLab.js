@@ -6,6 +6,7 @@ import { lab, fmt, colorOf } from '@/lib/api';
 import Heatmap from '@/components/Heatmap';
 import FuelSavedCard from '@/components/FuelSavedCard';
 import SwarmCallsPanel from '@/components/SwarmCallsPanel';
+import { useSections } from '@/components/SiteConfigProvider';
 
 export function useLabOptions() {
   const [opt, setOpt] = useState(null), [err, setErr] = useState('');
@@ -154,7 +155,11 @@ export function routeInfo(em, ambId) {
   return { route: a.tls_on_route, status };
 }
 
+const HEATMAP_VIEWS = [['view-heatmap', 'heatmap'], ['view-city-3d', 'city3d'], ['view-world', 'world'], ['view-digital-twin', 'digital_twin']];
+
 export default function LiveLab() {
+  const { on } = useSections('live-lab');
+  const allowedViews = HEATMAP_VIEWS.filter(([section]) => on(section)).map(([, view]) => view);
   const [opt, err] = useLabOptions(); const [jobs, reload] = useJobs(); const [areas, reloadAreas] = useAreas();
   const [sel, setSel] = useState(null), [ctl, setCtl] = useState(null), [amb, setAmb] = useState(null);
   const [useNetwork, setUseNetwork] = useState(null);
@@ -175,19 +180,19 @@ export default function LiveLab() {
   const cmp = cmpCtl ? cmps[cmpCtl] : null;
   const stopAll = () => lab('/api/lab/stop-all', { method: 'POST' }).then(reload).catch(() => { });
   return <>
-    <section className="panel"><div className="toolbar"><h2>Live simulation lab</h2><button className="danger" onClick={stopAll}><OctagonX size={16} /> Stop all running</button></div>
-      {err ? <div className="error">{err}. Start it with <code>uvicorn experiments.lab.api:app --port 8090</code>.</div> : <>
-        <JobForm opt={opt} kind="experiment" areas={areas} network={useNetwork} onCreated={j => { setSel(j.id); reload() }} />
-        <AreasPanel areas={areas} reload={reloadAreas} onUse={a => setUseNetwork(AREA_PREFIX + a.id)} />
+    {(on('experiment-form') || on('real-world-areas') || on('stop-all')) && <section className="panel"><div className="toolbar"><h2>Live simulation lab</h2>{on('stop-all') && <button className="danger" onClick={stopAll}><OctagonX size={16} /> Stop all running</button>}</div>
+      {on('experiment-form') && err ? <div className="error">{err}. Start it with <code>uvicorn experiments.lab.api:app --port 8090</code>.</div> : <>
+        {on('experiment-form') && <JobForm opt={opt} kind="experiment" areas={areas} network={useNetwork} onCreated={j => { setSel(j.id); reload() }} />}
+        {on('real-world-areas') && <AreasPanel areas={areas} reload={reloadAreas} onUse={a => setUseNetwork(AREA_PREFIX + a.id)} />}
       </>}
-      <p className="muted small">Every controller in a job runs on the identical network, demand and seed. Controllers in an experiment job run one after another; the heatmap follows the one that is running.</p>
-    </section>
-    {live && <section className="panel"><div className="toolbar"><h2>Network state</h2>
+      {on('experiment-form') && <p className="muted small">Every controller in a job runs on the identical network, demand and seed. Controllers in an experiment job run one after another; the heatmap follows the one that is running.</p>}
+    </section>}
+    {live && (allowedViews.length > 0 || on('emergency-panel') || on('fuel-card') || on('swarm-calls')) && <section className="panel"><div className="toolbar"><h2>Network state</h2>
       <div className="tabs">{parts.map(p => <button key={p} className={p === c ? 'on' : ''} onClick={() => setCtl(p)}><i className="dot" style={{ background: colorOf(p) }} />{p}</button>)}</div></div>
-      <Heatmap layout={live.layout} network={job?.spec?.network} junctions={part?.state?.junctions} source={part?.state?.source || 'live_simulation'} simTime={part?.state?.sim_time_s}
-        updated={part?.state?.updated_utc} route={r.route} routeStatus={r.status} title={`${c} · ${part?.state?.status || 'waiting'}`} />
-      <EmergencyPanel em={part?.emergency} selected={amb} onSelect={setAmb} />
-      <div style={{ marginTop: 18 }}>
+      {allowedViews.length > 0 && <Heatmap layout={live.layout} network={job?.spec?.network} junctions={part?.state?.junctions} source={part?.state?.source || 'live_simulation'} simTime={part?.state?.sim_time_s}
+        updated={part?.state?.updated_utc} route={r.route} routeStatus={r.status} title={`${c} · ${part?.state?.status || 'waiting'}`} allowedViews={allowedViews} />}
+      {on('emergency-panel') && <EmergencyPanel em={part?.emergency} selected={amb} onSelect={setAmb} />}
+      {on('fuel-card') && <div style={{ marginTop: 18 }}>
         <FuelSavedCard
           baselineFuelMg={cmp?.fuel_mg?.baseline}
           swarmFuelMg={cmp?.fuel_mg?.swarm}
@@ -200,10 +205,10 @@ export default function LiveLab() {
             ? 'This job has no second controller to compare fuel against.'
             : 'Measured fuel and CO₂ for each controller appear when the job finishes.'}
         />
-      </div>
-      <SwarmCallsPanel jobId={sel} isLive={!['completed', 'failed', 'cancelled'].includes(job?.status)} />
+      </div>}
+      {on('swarm-calls') && <SwarmCallsPanel jobId={sel} isLive={!['completed', 'failed', 'cancelled'].includes(job?.status)} />}
     </section>}
-    <section className="panel"><div className="toolbar"><h2>Jobs</h2><span className="muted small">{jobs.length} recent · click one to view it above</span></div>
-      <div className="jobs-scroll"><JobList jobs={jobs} selected={sel} onSelect={setSel} areas={areas} /></div></section>
+    {on('jobs-table') && <section className="panel"><div className="toolbar"><h2>Jobs</h2><span className="muted small">{jobs.length} recent · click one to view it above</span></div>
+      <div className="jobs-scroll"><JobList jobs={jobs} selected={sel} onSelect={setSel} areas={areas} /></div></section>}
   </>;
 }

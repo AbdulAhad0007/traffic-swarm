@@ -3,16 +3,18 @@
     uvicorn experiments.lab.api:app --port 8090        (from the project root)
 
 Environment: TSI_LAB_ROOT (project root used for networks, runs and jobs; default: this repo),
-TSI_LAB_MAX_RUNNING (default 2), TSI_WEB_ALLOWED_ORIGINS (comma list; default http://localhost:5173).
+TSI_LAB_MAX_RUNNING (default 2), TSI_WEB_ALLOWED_ORIGINS (comma list; default http://localhost:5173),
+TSI_GATEWAY_SECRET (optional; when set, requests must carry it in X-TSI-Gateway-Secret).
 No endpoint accepts a filesystem path or a command-line argument from the client: jobs take only
 allow-listed values (see jobs.validate_spec), saved runs are addressed by a validated relative id
 that must resolve inside experiments/runs, and reports by a validated name.
 """
 from __future__ import annotations
-import csv, json, logging, os, re, threading
+import csv, hmac, json, logging, os, re, threading
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from experiments.lab.jobs import JobManager, SpecError, PROJECT_ROOT
 from experiments.lab.osm_areas import AreaStore, AreaError
 
@@ -40,6 +42,16 @@ app = FastAPI(title="Traffic Swarm Intelligence Lab", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in os.environ.get(
     "TSI_WEB_ALLOWED_ORIGINS", "http://localhost:5173").split(",") if o.strip()],
     allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
+
+
+@app.middleware("http")
+async def require_gateway_secret(request, call_next):
+    """With TSI_GATEWAY_SECRET set, only the website's proxy (which enforces module rules) may call the API."""
+    secret = os.environ.get("TSI_GATEWAY_SECRET")
+    if secret and request.method != "OPTIONS" and request.url.path != "/api/lab/health" and not hmac.compare_digest(
+            request.headers.get("x-tsi-gateway-secret", "").encode(), secret.encode()):
+        return JSONResponse({"detail": "forbidden"}, status_code=403)
+    return await call_next(request)
 
 
 def _json(path: Path):

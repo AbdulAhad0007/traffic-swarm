@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, LineChart, Line, Legend } from 'recharts';
 import { lab, fmt, KPIS, colorOf, variantOfDir } from '@/lib/api';
 import { KpiTable } from '@/components/BeforeAfter';
+import { useSections } from '@/components/SiteConfigProvider';
 
 const axis = { stroke: '#8a94a6', fontSize: 12 };
 const tip = { contentStyle: { background: '#101722', border: '1px solid #273244', borderRadius: 8, color: '#eef2f7' } };
@@ -19,20 +20,21 @@ function normalise(cmp) {
 }
 
 function SavedRun({ id }) {
+  const { on } = useSections('controllers');
   const [cmp, setCmp] = useState(null);
   useEffect(() => { setCmp(null); if (id) lab('/api/lab/runs/comparison?id=' + encodeURIComponent(id)).then(x => setCmp(normalise(x))).catch(() => { }) }, [id]);
   if (!cmp) return <p className="muted">Select a saved run.</p>;
   const ctrls = Object.keys(cmp.controllers);
   return <>
     <div className="meta"><span>scenario <b>{cmp.scenario}</b></span><span>seed <b>{cmp.seed}</b></span><span>network <b>{cmp.metadata?.network?.preset}</b></span><span>route sha256 <b className="mono">{cmp.metadata?.scenario_route_sha256?.slice(0, 12)}…</b></span></div>
-    <div className="multiples">{KPIS.slice(0, 6).map(([k, label, unit]) => { const data = ctrls.map(c => ({ c, v: cmp.controllers[c]?.[k] })).filter(d => d.v != null);
+    {on('saved-run-charts') && <div className="multiples">{KPIS.slice(0, 6).map(([k, label, unit]) => { const data = ctrls.map(c => ({ c, v: cmp.controllers[c]?.[k] })).filter(d => d.v != null);
       return <div key={k} className="mini"><b>{label}</b> <span className="muted small">{unit}</span>
         <ResponsiveContainer width="100%" height={150}><BarChart data={data} margin={{ top: 6, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke="#1c2634" vertical={false} />
           <XAxis dataKey="c" tick={axis} interval={0} angle={-15} textAnchor="end" height={40} /><YAxis tick={axis} width={52} /><Tooltip {...tip} formatter={v => [fmt(v), label]} />
-          <Bar dataKey="v" radius={[4, 4, 0, 0]} maxBarSize={36}>{data.map(d => <Cell key={d.c} fill={colorOf(d.c)} />)}</Bar></BarChart></ResponsiveContainer></div> })}</div>
-    <KpiTable result={cmp} />
-    <details><summary>Controller configurations</summary><pre>{JSON.stringify({ variants: cmp.metadata?.controller_variants, settings: cmp.metadata?.controller_settings,
-      actuated: cmp.controllers.actuated?.actuated_config, software: cmp.metadata?.software }, null, 2)}</pre></details>
+          <Bar dataKey="v" radius={[4, 4, 0, 0]} maxBarSize={36}>{data.map(d => <Cell key={d.c} fill={colorOf(d.c)} />)}</Bar></BarChart></ResponsiveContainer></div> })}</div>}
+    {on('saved-run-kpi-table') && <KpiTable result={cmp} />}
+    {on('saved-run-config') && <details><summary>Controller configurations</summary><pre>{JSON.stringify({ variants: cmp.metadata?.controller_variants, settings: cmp.metadata?.controller_settings,
+      actuated: cmp.controllers.actuated?.actuated_config, software: cmp.metadata?.software }, null, 2)}</pre></details>}
   </>;
 }
 
@@ -49,6 +51,7 @@ function CiChart({ rows }) {
 }
 
 function EvaluationReport({ name }) {
+  const { on } = useSections('controllers');
   const [rep, setRep] = useState(null), [f, setF] = useState({});
   useEffect(() => { setRep(null); if (name) lab('/api/lab/reports/' + name).then(r => { setRep(r); const d = r.descriptives?.[0]; if (d) setF({ network: d.network, scenario: d.scenario, metric: 'average_time_loss_s' }) }).catch(() => { }) }, [name]);
   const opts = useMemo(() => { const d = rep?.descriptives || []; const u = k => [...new Set(d.map(x => x[k]))]; return { network: u('network'), scenario: u('scenario'), metric: u('metric') } }, [rep]);
@@ -61,9 +64,9 @@ function EvaluationReport({ name }) {
     <div className={'sync ' + (rep.matrix?.completed < rep.matrix?.planned ? 'warn' : '')}>Matrix: {rep.matrix?.completed} of {rep.matrix?.planned} planned runs completed, {rep.matrix?.failed} failed. {rep.matrix?.completed < rep.matrix?.planned ? 'INCOMPLETE - results cover completed cells only.' : ''}</div>
     <div className="form">{['network', 'scenario', 'metric'].map(k => <label key={k}>{k}<select value={f[k] || ''} onChange={e => setF({ ...f, [k]: e.target.value })}>{opts[k].map(o => <option key={o}>{o}</option>)}</select></label>)}</div>
     <p className="muted small"><b>{m.label}</b> ({m.unit}) - {m.definition}</p>
-    <CiChart rows={rows} />
-    <div className="tablewrap"><table><thead><tr><th>controller vs ref</th><th>pairs</th><th>mean diff</th><th>95 % CI of diff</th><th>change</th><th>test</th><th>p (Holm)</th><th>effect d<sub>z</sub></th><th>verdict</th></tr></thead>
-      <tbody>{tests.map(t => <tr key={t.controller}><td>{t.controller} vs {t.reference}</td><td>{t.n_pairs}</td><td>{fmt(t.mean_diff)}</td><td>{fmt(t.diff_ci_low)} … {fmt(t.diff_ci_high)}</td><td>{fmt(t.rel_change_pct, 1)} %</td><td>{t.test}</td><td>{fmt(t.p_adjusted, 4)}</td><td>{fmt(t.effect_size_dz)}</td><td>{t.verdict}</td></tr>)}</tbody></table></div>
+    {on('evaluation-ci-chart') && <CiChart rows={rows} />}
+    {on('evaluation-paired-tests') && <div className="tablewrap"><table><thead><tr><th>controller vs ref</th><th>pairs</th><th>mean diff</th><th>95 % CI of diff</th><th>change</th><th>test</th><th>p (Holm)</th><th>effect d<sub>z</sub></th><th>verdict</th></tr></thead>
+      <tbody>{tests.map(t => <tr key={t.controller}><td>{t.controller} vs {t.reference}</td><td>{t.n_pairs}</td><td>{fmt(t.mean_diff)}</td><td>{fmt(t.diff_ci_low)} … {fmt(t.diff_ci_high)}</td><td>{fmt(t.rel_change_pct, 1)} %</td><td>{t.test}</td><td>{fmt(t.p_adjusted, 4)}</td><td>{fmt(t.effect_size_dz)}</td><td>{t.verdict}</td></tr>)}</tbody></table></div>}
     {rep.notes && <ul className="muted small">{rep.notes.map((n, i) => <li key={i}>{n}</li>)}</ul>}
   </>;
 }
@@ -102,6 +105,7 @@ function MixedTraffic({ id }) {
 }
 
 export default function Results({ view }) {
+  const { on } = useSections('controllers');
   const runs = useRuns(), reports = useReports();
   const [runId, setRunId] = useState(''), [repName, setRepName] = useState('');
   useEffect(() => { if (!runId && runs.length) setRunId(runs[0].id) }, [runs]);
@@ -111,7 +115,7 @@ export default function Results({ view }) {
   if (view === 'mixed') return <section className="panel"><h2>Indian mixed traffic</h2><div className="form">{runPicker}</div><MixedTraffic id={runId} /></section>;
   if (view === 'prediction') return <section className="panel"><h2>Short-term prediction</h2><div className="form">{repPicker(reports.filter(r => r.includes('prediction')))}</div>{repName ? <EvaluationReport name={repName} /> : <p className="muted">No prediction report yet - run <code>python -m experiments.tools.prediction_report</code>.</p>}</section>;
   return <>
-    <section className="panel"><h2>Controller comparison - evaluation report (multi-seed)</h2><div className="form">{repPicker(reports.filter(r => !r.includes('prediction')))}</div>{repName ? <EvaluationReport name={repName} /> : <p className="muted">No evaluation report yet - run <code>python -m experiments.tools.evaluate_matrix</code>.</p>}</section>
-    <section className="panel"><h2>Controller comparison - single saved run</h2><div className="form">{runPicker}</div><SavedRun id={runId} /></section>
+    {(on('evaluation-ci-chart') || on('evaluation-paired-tests')) && <section className="panel"><h2>Controller comparison - evaluation report (multi-seed)</h2><div className="form">{repPicker(reports.filter(r => !r.includes('prediction')))}</div>{repName ? <EvaluationReport name={repName} /> : <p className="muted">No evaluation report yet - run <code>python -m experiments.tools.evaluate_matrix</code>.</p>}</section>}
+    {(on('saved-run-charts') || on('saved-run-kpi-table') || on('saved-run-config')) && <section className="panel"><h2>Controller comparison - single saved run</h2><div className="form">{runPicker}</div><SavedRun id={runId} /></section>}
   </>;
 }

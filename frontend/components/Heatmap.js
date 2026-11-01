@@ -21,10 +21,12 @@ const VIEWS = [
   ['digital_twin', '3D Intersection', Box, '#f59e0b'],
 ];
 
-function ViewTabs({ viewMode, setViewMode }) {
+const ALL_VIEWS = VIEWS.map(([id]) => id);
+
+function ViewTabs({ viewMode, setViewMode, allowedViews }) {
   return (
     <div className="tabs">
-      {VIEWS.map(([id, label, Icon, color]) => (
+      {VIEWS.filter(([id]) => allowedViews.includes(id)).map(([id, label, Icon, color]) => (
         <button key={id} type="button" className={viewMode === id ? 'on' : ''} onClick={() => setViewMode(id)}>
           <Icon size={14} color={color} />
           {label}
@@ -46,8 +48,10 @@ export default function Heatmap({
   title,
   height = 460,
   network,
+  allowedViews = ALL_VIEWS,
 }) {
-  const [viewMode, setViewMode] = useState('heatmap'); // 'heatmap' | 'city3d' | 'world' | 'digital_twin'
+  const [requestedView, setViewMode] = useState('heatmap'); // 'heatmap' | 'city3d' | 'world' | 'digital_twin'
+  const viewMode = allowedViews.includes(requestedView) ? requestedView : allowedViews[0];
   // A network imported from OpenStreetMap opens on the world map, where its lights sit at their real positions
   const openedGeoFor = useRef(null);
   useEffect(() => {
@@ -210,7 +214,7 @@ export default function Heatmap({
     return (
       <div ref={boxRef} className={'heatmap' + (isFull ? ' is-full' : '')} style={viewMode === 'digital_twin' ? { padding: 0 } : undefined}>
         <div className="hm-head" style={viewMode === 'digital_twin' ? { padding: '14px 20px 10px', margin: 0 } : undefined}>
-          <ViewTabs viewMode={viewMode} setViewMode={setViewMode} />
+          <ViewTabs viewMode={viewMode} setViewMode={setViewMode} allowedViews={allowedViews} />
           {title && <b style={{ fontSize: 13, color: '#f8fafc' }}>{title}</b>}
           <span className="muted" style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
             sim t = {simTime != null ? `${Math.round(simTime)} s` : '—'}
@@ -258,7 +262,7 @@ export default function Heatmap({
     <div ref={boxRef} className={'heatmap' + (isFull ? ' is-full' : '')}>
       {/* Top Header & HUD */}
       <div className="hm-head">
-        <ViewTabs viewMode={viewMode} setViewMode={setViewMode} />
+        <ViewTabs viewMode={viewMode} setViewMode={setViewMode} allowedViews={allowedViews} />
 
         <span className={'badge ' + (source === 'live_simulation' ? 'live' : 'hist')}>
           {source === 'live_simulation' ? '● RADIANT THERMAL DENSITY' : 'HISTORICAL REPLAY'}
@@ -767,7 +771,7 @@ export default function Heatmap({
               Phase {info.phase ?? '—'} ({info.phase % 2 === 0 ? 'GREEN' : 'YELLOW/CLEAR'})
             </b>
           </span>
-          <button
+          {allowedViews.includes('digital_twin') && <button
             type="button"
             className="small"
             style={{ marginLeft: 'auto', background: 'linear-gradient(135deg, #0369a1, #0284c7)' }}
@@ -775,7 +779,7 @@ export default function Heatmap({
           >
             <Box size={13} />
             Inspect in 3D Digital Twin
-          </button>
+          </button>}
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
@@ -783,14 +787,14 @@ export default function Heatmap({
             💡 Click any junction node to inspect live signal phases or launch the 3D Digital Twin command view.
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button type="button" className="small" onClick={() => setViewMode('city3d')}>
+            {allowedViews.includes('city3d') && <button type="button" className="small" onClick={() => setViewMode('city3d')}>
               <Building2 size={13} color="#a855f7" />
               3D City Grid
-            </button>
-            <button type="button" className="small" onClick={() => setViewMode('world')}>
+            </button>}
+            {allowedViews.includes('world') && <button type="button" className="small" onClick={() => setViewMode('world')}>
               <Globe2 size={13} color="#10b981" />
               World Map
-            </button>
+            </button>}
           </div>
         </div>
       )}

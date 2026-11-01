@@ -28,6 +28,7 @@ import RichDropdown from '@/components/RichDropdown';
 import SwarmTerminal from '@/components/SwarmTerminal';
 import SwarmImpactPanel from '@/components/SwarmImpactPanel';
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
+import { useSections } from '@/components/SiteConfigProvider';
 import { SUPPORTED_CITIES } from '@/lib/cityData';
 import { LookaheadDemo, SWARM, FIXED, FUEL, shortName } from '@/lib/swarmMesh';
 import { lab } from '@/lib/api';
@@ -218,6 +219,9 @@ function downloadBlob(content, type, filename) {
 const presetArea = city => ({ id: city.id, name: city.name, region: city.region, center: city.center, source: 'preset' });
 
 export default function OsmSignalMap() {
+  const { on, moduleOn, sectionOn } = useSections('signal-map');
+  const mapOn = on('map-canvas');
+  const canSendToLab = on('send-to-lab') && sectionOn('live-lab', 'real-world-areas');
   const mapContainerRef = useRef(null);
   const fxCanvasRef = useRef(null);
   const leafletMapRef = useRef(null);
@@ -879,11 +883,16 @@ export default function OsmSignalMap() {
     setLabSend({ status: 'sending' });
     try {
       await lab('/api/lab/osm-areas', { method: 'POST', body: JSON.stringify({ name: area.name, bbox: clampBbox(bbox, LAB_MAX_KM2) }) });
-      router.push('/live');
+      if (moduleOn('live-lab')) router.push('/live');
     } catch (err) {
       setLabSend({ status: 'error', error: `Could not reach the SUMO lab server (${err.message}). Start it with: uvicorn experiments.lab.api:app --port 8090` });
     }
   };
+
+  // Leaflet measured a hidden container while the map was off
+  useEffect(() => {
+    if (mapOn) leafletMapRef.current?.invalidateSize();
+  }, [mapOn]);
 
   // Scan exactly what is on screen (clamped to the per-scan area limit)
   const scanVisibleArea = async () => {
@@ -965,9 +974,9 @@ export default function OsmSignalMap() {
               <span className="status" style={{ fontSize: 11, background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
                 {data ? `${junctions.length} signalised JunctionAgents` : net.status === 'loading' ? 'loading signals…' : 'no signals loaded'}
               </span>
-              <button className="explainer-open-btn" onClick={() => setExplainerOpen(true)}>
+              {moduleOn('how-it-works') && <button className="explainer-open-btn" onClick={() => setExplainerOpen(true)}>
                 <BookOpen size={14} /> How Swarm Intelligence Works
-              </button>
+              </button>}
             </div>
             <h2 style={{ marginTop: 6, marginBottom: 4, fontSize: '1.5rem', color: '#f1f5f9' }}>
               Real traffic signals, anywhere in the world
@@ -978,7 +987,7 @@ export default function OsmSignalMap() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap', flex: '1 1 540px', justifyContent: 'flex-end' }}>
+          {on('place-controls') && <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, flexWrap: 'wrap', flex: '1 1 540px', justifyContent: 'flex-end' }}>
             <div style={{ flex: '1 1 200px', minWidth: 180, maxWidth: 260 }}>
               <RichDropdown
                 options={cityDropdownOptions}
@@ -1016,10 +1025,10 @@ export default function OsmSignalMap() {
                 label="Map Style"
               />
             </div>
-          </div>
+          </div>}
         </div>
 
-        <form onSubmit={handleSearchLocation} className="gzb-search-row">
+        {on('place-search') && <form onSubmit={handleSearchLocation} className="gzb-search-row">
           <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <Search size={16} style={{ position: 'absolute', left: 12, top: 11, color: '#94a3b8' }} />
             <input
@@ -1037,13 +1046,13 @@ export default function OsmSignalMap() {
           <button type="button" onClick={scanVisibleArea} className="gzb-search-btn secondary" title={`Scan the visible map (up to ${LIMITS.maxAreaKm2} km²)`}>
             <Crosshair size={14} /> Scan This View
           </button>
-        </form>
+        </form>}
         {searchError && <p className="osm-note error">{searchError}</p>}
 
         {/* What was actually loaded from OSM */}
-        <div className="osm-strip">
-          <span><b>Area</b> {area.name}{area.region ? `, ${area.region}` : ''} · {areaKm2.toFixed(1)} km²</span>
-          {stats && (
+        {(on('area-stats') || on('osm-exports') || canSendToLab) && <div className="osm-strip">
+          {on('area-stats') && <span><b>Area</b> {area.name}{area.region ? `, ${area.region}` : ''} · {areaKm2.toFixed(1)} km²</span>}
+          {on('area-stats') && stats && (
             <>
               <span><b>{stats.signalNodes}</b> OSM signal nodes</span>
               <span><b>{stats.junctionClusters}</b> signalised junctions</span>
@@ -1070,18 +1079,18 @@ export default function OsmSignalMap() {
             </>
           )}
           <span className="osm-actions">
-            <button onClick={downloadOsm} disabled={download?.status === 'loading'} title="OSM road extract for SUMO netconvert">
+            {on('osm-exports') && <><button onClick={downloadOsm} disabled={download?.status === 'loading'} title="OSM road extract for SUMO netconvert">
               <Download size={13} /> {download?.status === 'loading' ? 'Downloading .osm…' : 'Download .osm (SUMO)'}
             </button>
             <button onClick={downloadGeoJSON} disabled={!data} title="Signal junctions and road links as GeoJSON">
               <Download size={13} /> Signals GeoJSON
-            </button>
-            <button className="primary" onClick={sendToLab} disabled={!data || !junctions.length || labSend?.status === 'sending'}
+            </button></>}
+            {canSendToLab && <button className="primary" onClick={sendToLab} disabled={!data || !junctions.length || labSend?.status === 'sending'}
               title={`Simulate this place in SUMO with its real traffic lights (centre ${LAB_MAX_KM2} km² of the scan)`}>
               <FlaskConical size={13} /> {labSend?.status === 'sending' ? 'Sending…' : 'Simulate in SUMO Lab'}
-            </button>
+            </button>}
           </span>
-        </div>
+        </div>}
         {labSend?.status === 'error' && <p className="osm-note error">{labSend.error}</p>}
         {nearby?.spot && (
           <div className="osm-nearby">
@@ -1103,25 +1112,25 @@ export default function OsmSignalMap() {
       </section>
 
       {/* Comparison toggle, emergency trigger and simulation controls */}
-      <div className="map-control-bar">
-        <div className="mode-toggle" role="group" aria-label="Signal control mode">
+      {(on('mode-toggle') || on('emergency-corridor') || on('sim-controls') || on('map-layers')) && <div className="map-control-bar">
+        {on('mode-toggle') && <div className="mode-toggle" role="group" aria-label="Signal control mode">
           <button className={isSwarm ? 'on swarm' : ''} onClick={() => setActiveMode(SWARM)} aria-pressed={isSwarm}>
             <Zap size={14} /> Swarm Intelligence {isSwarm && <b>ON</b>}
           </button>
           <button className={!isSwarm ? 'on fixed' : ''} onClick={() => setActiveMode(FIXED)} aria-pressed={!isSwarm}>
             <Timer size={14} /> Traditional Fixed Timer (Static 30s)
           </button>
-        </div>
+        </div>}
 
-        <button className="em-trigger" onClick={triggerEmergency} disabled={!demo || !canRoute || emActive}
+        {on('emergency-corridor') && <button className="em-trigger" onClick={triggerEmergency} disabled={!demo || !canRoute || emActive}
           title={canRoute ? '' : 'Needs at least two signals linked by road'}>
           <Siren size={15} />
           {emActive
             ? `Ambulance corridor active · swarm delay ${em.swarm.delay_s}s · static ${em.fixed.delay_s}s`
             : '🚑 Trigger Emergency Ambulance Corridor'}
-        </button>
+        </button>}
 
-        <div className="sim-controls">
+        {on('sim-controls') && <div className="sim-controls">
           <button onClick={() => setIsPlaying(p => !p)} aria-label={isPlaying ? 'Pause simulation' : 'Play simulation'}>
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
           </button>
@@ -1129,15 +1138,15 @@ export default function OsmSignalMap() {
             <button key={s} className={speed === s ? 'on' : ''} onClick={() => setSpeed(s)} aria-pressed={speed === s}>{s}×</button>
           ))}
           <span className="sim-clock">T+{demo ? demo.t : 0}s</span>
-        </div>
+        </div>}
 
-        <div className="map-toggles">
+        {on('map-layers') && <div className="map-toggles">
           <label><input type="checkbox" checked={showFlow} onChange={e => setShowFlow(e.target.checked)} /> Packets &amp; vehicles</label>
           <label><input type="checkbox" checked={showLinks} onChange={e => setShowLinks(e.target.checked)} /> Road links</label>
-        </div>
-      </div>
+        </div>}
+      </div>}
 
-      <div className="map-legend">
+      {on('map-legend') && <div className="map-legend">
         <span><i style={{ background: '#f59e0b', boxShadow: '0 0 0 1px #fde68a' }} /> OSM signal head (exact)</span>
         <span><i style={{ background: '#a5f3fc', boxShadow: '0 0 8px #22d3ee' }} /> platoon alert packet</span>
         <span><i style={{ background: '#fbbf24' }} /> vehicles in transit (simulated)</span>
@@ -1145,7 +1154,7 @@ export default function OsmSignalMap() {
         <span><i style={{ background: '#f59e0b' }} /> yellow</span>
         <span><i style={{ background: '#f43f5e' }} /> red / all-red</span>
         <span className="legend-q">network queue: <b style={{ color: isSwarm ? '#10b981' : '#f43f5e' }}>{queueTotal}</b> veh (other mode {queueOther})</span>
-      </div>
+      </div>}
 
       {net.stage === 'roads' && (
         <div className="osm-stage">
@@ -1167,11 +1176,12 @@ export default function OsmSignalMap() {
         </div>
       )}
 
-      <div className="gzb-map-wrap">
+      {/* The Leaflet container stays mounted while the map is off, so turning it back on keeps the simulation */}
+      <div className={`gzb-map-wrap ${mapOn ? '' : 'map-off'}`}>
         <div ref={mapContainerRef} className="gzb-map-canvas" style={{ background: '#090e18' }} />
-        <canvas ref={fxCanvasRef} className="map-fx-canvas" aria-hidden="true" />
+        {mapOn && <canvas ref={fxCanvasRef} className="map-fx-canvas" aria-hidden="true" />}
 
-        {net.status === 'loading' && (
+        {mapOn && net.status === 'loading' && (
           <div className="map-overlay">
             <RefreshCw size={18} className="spin" />
             <div>
@@ -1183,7 +1193,7 @@ export default function OsmSignalMap() {
             </div>
           </div>
         )}
-        {net.status === 'error' && (
+        {mapOn && net.status === 'error' && (
           <div className="map-overlay error">
             <TrafficCone size={18} />
             <div>
@@ -1193,7 +1203,7 @@ export default function OsmSignalMap() {
             <button onClick={() => setReloadNonce(n => n + 1)}><RefreshCw size={13} /> Retry</button>
           </div>
         )}
-        {net.status === 'ready' && !junctions.length && (
+        {mapOn && net.status === 'ready' && !junctions.length && (
           <div className="map-overlay">
             <TrafficCone size={18} />
             <div>
@@ -1215,9 +1225,9 @@ export default function OsmSignalMap() {
           </div>
         )}
 
-        {demo && <SwarmTerminal messages={messages} selectedId={selJ?.id} mode={activeMode} />}
+        {on('swarm-terminal') && demo && <SwarmTerminal messages={messages} selectedId={selJ?.id} mode={activeMode} />}
 
-        {selJ && selV && (
+        {on('junction-status') && selJ && selV && (
           <div className="gzb-status-pill">
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
               <div style={{ width: 10, height: 10, flex: '0 0 auto', borderRadius: '50%', background: PHASE_COLOR[selV.state] }} />
@@ -1244,10 +1254,10 @@ export default function OsmSignalMap() {
         )}
       </div>
 
-      {demo && <SwarmImpactPanel fuel={fuel} emergency={em} simSeconds={demo.t} cityName={area.name} />}
+      {on('impact-panel') && demo && <SwarmImpactPanel fuel={fuel} emergency={em} simSeconds={demo.t} cityName={area.name} />}
 
       {/* Inventory of every real signal in the scan, for checking against the ground */}
-      {data && junctions.length > 0 && (
+      {on('signal-inventory') && data && junctions.length > 0 && (
         <section className="panel osm-inventory">
           <h3><TrafficCone size={16} /> Signal inventory · {area.name}</h3>
           <div className="osm-table-wrap">

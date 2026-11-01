@@ -24,6 +24,7 @@ import {
 import { API, LAB, lab, fmt } from '@/lib/api';
 import FuelSavedCard from '@/components/FuelSavedCard';
 import RichDropdown from '@/components/RichDropdown';
+import { useSections } from '@/components/SiteConfigProvider';
 
 const RICH_SCENARIOS = [
   {
@@ -116,6 +117,8 @@ const GRID_ARCHITECTURES = [
 ];
 
 export default function ExperimentsPage() {
+  const { on, moduleOn } = useSections('overview');
+  const [notice, setNotice] = useState('');
   const [labHealth, setLabHealth] = useState('checking');
   const [backendHealth, setBackendHealth] = useState('checking');
   const [experiments, setExperiments] = useState([]);
@@ -232,7 +235,8 @@ export default function ExperimentsPage() {
         body: JSON.stringify(spec),
       });
       await load();
-      window.location.href = '/live';
+      if (moduleOn('live-lab')) window.location.href = '/live';
+      else setNotice('Simulation started. It can be viewed once Live Lab is available again.');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -262,7 +266,7 @@ export default function ExperimentsPage() {
       </header>
 
       {/* Top Telemetry Cards */}
-      <section className="grid telemetry-top-grid">
+      {on('telemetry-status') && <section className="grid telemetry-top-grid">
         <div className="card">
           <Activity size={22} />
           <div>
@@ -291,10 +295,10 @@ export default function ExperimentsPage() {
           </div>
           <span style={{ color: '#10b981' }}>HARD GATED</span>
         </div>
-      </section>
+      </section>}
 
       {/* KPI Improvements Showcase Pill */}
-      {kpiHighlights && (
+      {on('kpi-highlights') && kpiHighlights && (
         <section
           style={{
             display: 'grid',
@@ -350,8 +354,8 @@ export default function ExperimentsPage() {
       )}
 
       {/* Quick Interactive Command Panel */}
-      <section className="panel">
-        <div className="toolbar" style={{ flexWrap: 'wrap', gap: 14 }}>
+      {(on('command-center') || on('feature-cards')) && <section className="panel">
+        {on('command-center') && <div className="toolbar" style={{ flexWrap: 'wrap', gap: 14 }}>
           <div>
             <h2>Simulation Command Center</h2>
             <p className="muted">
@@ -380,12 +384,13 @@ export default function ExperimentsPage() {
               <RefreshCw size={15} /> Refresh
             </button>
           </div>
-        </div>
+        </div>}
 
         {error && <div className="error">{error}</div>}
+        {notice && <p className="muted small">{notice}</p>}
 
         {/* Feature Navigation Cards */}
-        <div
+        {on('feature-cards') && <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(min(260px, 100%), 1fr))',
@@ -393,7 +398,7 @@ export default function ExperimentsPage() {
             marginTop: 18,
           }}
         >
-          <Link href="/ghaziabad" className="mini feature-card-highlight" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+          {moduleOn('signal-map') && <Link href="/ghaziabad" className="mini feature-card-highlight" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b style={{ color: '#f43f5e', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <MapPin size={16} /> Real-World Signal Map
@@ -403,9 +408,9 @@ export default function ExperimentsPage() {
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Any city: real OpenStreetMap traffic signals, linked by real roads, with live swarm signal control.
             </p>
-          </Link>
+          </Link>}
 
-          <Link href="/live" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+          {moduleOn('live-lab') && <Link href="/live" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b style={{ color: '#38bdf8' }}>Live Heatmap & Control</b>
               <ArrowRight size={16} color="#38bdf8" />
@@ -413,9 +418,9 @@ export default function ExperimentsPage() {
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Watch signalized junctions adapt phase timings dynamically as queues form.
             </p>
-          </Link>
+          </Link>}
 
-          <Link href="/demo" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+          {moduleOn('before-after') && <Link href="/demo" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b style={{ color: '#10b981' }}>Side-by-Side Dual Demo</b>
               <ArrowRight size={16} color="#10b981" />
@@ -423,9 +428,9 @@ export default function ExperimentsPage() {
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Synchronized visual replay comparing Fixed-Time baseline against Swarm Intelligence.
             </p>
-          </Link>
+          </Link>}
 
-          <Link href="/controllers" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
+          {moduleOn('controllers') && <Link href="/controllers" className="mini" style={{ cursor: 'pointer', textDecoration: 'none' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <b style={{ color: '#f59e0b' }}>Controller Comparison</b>
               <ArrowRight size={16} color="#f59e0b" />
@@ -433,12 +438,12 @@ export default function ExperimentsPage() {
             <p className="muted" style={{ marginTop: 6, fontSize: 12 }}>
               Statistical multi-seed evaluation across Actuated, Swarm, and Priority modes.
             </p>
-          </Link>
-        </div>
-      </section>
+          </Link>}
+        </div>}
+      </section>}
 
       {/* Grid Architecture & Topological Science Section */}
-      <section className="panel">
+      {on('grid-architectures') && <section className="panel">
         <div className="toolbar" style={{ flexWrap: 'wrap', gap: 10 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -504,12 +509,12 @@ export default function ExperimentsPage() {
             </div>
           );
         })()}
-      </section>
+      </section>}
 
       {/* Selected Experiment KPI Chart */}
-      {selectedComparison && (
+      {selectedComparison && (on('measured-benchmark') || on('benchmark-fuel') || on('benchmark-raw-json')) && (
         <section className="panel">
-          <div className="toolbar">
+          {on('measured-benchmark') && <><div className="toolbar">
             <div>
               <h2>Measured Benchmark: {selectedId}</h2>
               <p className="muted">
@@ -544,31 +549,31 @@ export default function ExperimentsPage() {
             </div>
           ) : (
             <p className="muted">Loading comparison data...</p>
-          )}
+          )}</>}
 
           {/* Real-time Fuel Saved & Emissions Showcase */}
-          <div style={{ marginTop: 20 }}>
+          {on('benchmark-fuel') && <div style={{ marginTop: 20 }}>
             <FuelSavedCard
               baselineFuelMg={kpiHighlights?.fuelBase}
               swarmFuelMg={kpiHighlights?.fuelSwarm}
               baselineCo2Mg={kpiHighlights?.co2Base}
               swarmCo2Mg={kpiHighlights?.co2Swarm}
             />
-          </div>
+          </div>}
 
-          <details style={{ marginTop: 14 }}>
+          {on('benchmark-raw-json') && <details style={{ marginTop: 14 }}>
             <summary style={{ cursor: 'pointer', color: '#94a3b8', fontSize: 13 }}>
               View Raw Telemetry JSON
             </summary>
             <pre style={{ marginTop: 8 }}>
               {JSON.stringify(selectedComparison.comparisons?.swarm || selectedComparison, null, 2)}
             </pre>
-          </details>
+          </details>}
         </section>
       )}
 
       {/* Experiment Artifacts & Comparison Section */}
-      <section className="panel">
+      {on('run-artifacts') && <section className="panel">
         <div className="toolbar">
           <h2>Measured Simulation Artifacts</h2>
           <span className="badge live">● 100% REAL SUMO TELEMETRY</span>
@@ -615,7 +620,7 @@ export default function ExperimentsPage() {
             })}
           </div>
         )}
-      </section>
+      </section>}
     </>
   );
 }

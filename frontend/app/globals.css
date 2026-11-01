@@ -4185,3 +4185,59 @@ header.app-main-header p { margin: 0; font-size: 13px; }
   display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer;
   background: #0284c7; color: #fff; font-size: 0.8rem; font-weight: 600;
 }
+
+/* ===== Module gate and admin console ===== */
+.module-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 48px 16px; }
+.module-unavailable { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 64px 20px; }
+.module-unavailable h2 { margin: 0; }
+.admin-root { min-height: 100vh; background: var(--bg-base); color: var(--text-primary); }
+.admin-login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.admin-login { width: min(400px, 100%); display: flex; flex-direction: column; gap: 14px; margin: 0; }
+.admin-login h1 { margin: 6px 0 0; font-size: 1.4rem; }
+.admin-login label { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: var(--text-secondary); }
+.admin-login input { width: 100%; }
+.admin-login button[type='submit'] { justify-content: center; }
+.admin-shell { max-width: 1040px; margin: 0 auto; padding: 20px 16px 64px; }
+.admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 16px; border-bottom: 1px solid var(--border-highlight); }
+.admin-topbar-actions, .admin-confirm-actions { display: flex; gap: 8px; }
+.admin-intro { margin: 22px 0 18px; }
+.admin-intro h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.admin-intro p { margin: 0 0 10px; }
+.admin-modules { display: flex; flex-direction: column; gap: 10px; }
+.admin-module { background: var(--bg-surface); border: 1px solid var(--border-highlight); border-left: 3px solid var(--accent-emerald); border-radius: 12px; overflow: hidden; }
+.admin-module.off { border-left-color: var(--accent-rose); }
+.admin-module-head { display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 4px; }
+button.admin-expand { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 10px; background: transparent; border: none; box-shadow: none; color: inherit; text-align: left; cursor: pointer; }
+button.admin-expand:hover { background: transparent; transform: none; box-shadow: none; }
+.admin-expand svg { transition: transform 0.15s; flex: 0 0 auto; }
+.admin-expand svg.open { transform: rotate(180deg); }
+.admin-module-title { display: inline-flex; align-items: center; gap: 8px; min-width: 170px; }
+.admin-module-meta { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.admin-status { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; color: #fda4af; background: rgba(244, 63, 94, 0.14); }
+.admin-status.on { color: #6ee7b7; background: rgba(16, 185, 129, 0.14); }
+.admin-sections { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border-subtle); background: var(--bg-surface-sunken); }
+.admin-sections li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px 10px 36px; border-bottom: 1px solid var(--border-subtle); }
+.admin-sections li:last-child { border-bottom: none; }
+.admin-sections li > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.admin-sections li.off > div > span:first-child { color: var(--text-secondary); }
+button.admin-switch { position: relative; flex: 0 0 auto; width: 68px; height: 30px; padding: 0; border-radius: 999px; background: rgba(244, 63, 94, 0.16); border: 1px solid rgba(244, 63, 94, 0.45); box-shadow: none; transform: none; cursor: pointer; display: block; }
+button.admin-switch.on { background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.55); }
+button.admin-switch:disabled { opacity: 0.55; cursor: wait; }
+button.admin-switch:focus-visible { outline: 2px solid var(--accent-cyan); outline-offset: 2px; }
+.admin-switch-knob { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fda4af; transition: left 0.15s; }
+.admin-switch.on .admin-switch-knob { left: 41px; background: #6ee7b7; }
+.admin-switch-text { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); font-size: 0.68rem; font-weight: 800; color: #fda4af; }
+.admin-switch.on .admin-switch-text { right: auto; left: 11px; color: #6ee7b7; }
+.admin-confirm { width: min(460px, calc(100vw - 32px)); margin: 0; }
+.admin-confirm h2 { margin: 0 0 8px; }
+.admin-confirm-actions { justify-content: flex-end; margin-top: 14px; }
+.admin-toast { position: fixed; right: 16px; bottom: 16px; left: 16px; max-width: 420px; margin-left: auto; z-index: 3000; padding: 11px 14px; border-radius: 10px; background: var(--bg-surface-elevated); border: 1px solid rgba(16, 185, 129, 0.5); box-shadow: var(--neu-floating); font-size: 0.88rem; }
+.admin-toast.error { border-color: rgba(244, 63, 94, 0.6); }
+.gzb-map-wrap.map-off { height: auto; min-height: 0; overflow: visible; border: none; }
+/* Leaflet throws on a zero-size container, so a hidden map keeps real dimensions off-screen */
+.gzb-map-wrap.map-off .gzb-map-canvas { position: fixed; inset: auto; left: -10000px; top: 0; width: 800px; height: 600px; visibility: hidden; }
+.gzb-map-wrap.map-off .gzb-status-pill, .gzb-map-wrap.map-off .swarm-terminal { position: static; margin-bottom: 10px; width: auto; max-width: none; }
+@media (max-width: 600px) {
+  .admin-module-title { min-width: 0; }
+  .admin-sections li { padding-left: 16px; }
+}

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { X, Radio, Brain, Monitor, Fuel, Siren, MessageSquareQuote, Check, AlertCircle } from 'lucide-react';
 import { CONFIG, FUEL } from '@/lib/swarmMesh';
+import { useSections } from '@/components/SiteConfigProvider';
 
 const RULES = [
   ['Emergency corridor', 'A locked junction forces Yellow → All-Red → the ambulance axis and holds it until the ambulance has passed.'],
@@ -176,7 +177,9 @@ function PheromoneDiagram() {
   );
 }
 
-export default function SwarmExplainerModal({ open, onClose }) {
+export default function SwarmExplainerModal({ open: requested, onClose }) {
+  const { on, moduleOn } = useSections('how-it-works');
+  const open = requested && moduleOn('how-it-works');
   const closeRef = useRef(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
@@ -213,7 +216,7 @@ export default function SwarmExplainerModal({ open, onClose }) {
 
         <div className="explainer-body">
           {/* Compare Cards */}
-          <section className="explainer-compare">
+          {on('compare-cards') && <section className="explainer-compare">
             <div className="explainer-card muted-card">
               <div className="card-badge-row">
                 <span className="card-badge red">STATIC BASELINE</span>
@@ -239,10 +242,10 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 <li><b>Dead-green truncation:</b> Automatically cuts empty greens within 6 seconds to donate green time to congested approaches.</li>
               </ul>
             </div>
-          </section>
+          </section>}
 
           {/* Lookahead Platooning Section */}
-          <section>
+          {on('lookahead') && <section>
             <h3 className="explainer-h"><Radio size={16} color="#38bdf8" /> Lookahead Platooning (The &quot;Hapur Chungi&quot; Idea)</h3>
             <LookaheadDiagram />
             
@@ -268,10 +271,10 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 💡 <b>J2 receives this before vehicles physically arrive</b> and coordinates an adaptive green window tailored to the platoon spread plus a 3-second safety clearance.
               </p>
             </div>
-          </section>
+          </section>}
 
           {/* Architecture Flow */}
-          <section>
+          {on('architecture-flow') && <section>
             <h3 className="explainer-h"><Monitor size={16} color="#a855f7" /> Display vs. Decentralized Decision Making</h3>
             <div className="explainer-flow">
               <div>
@@ -297,10 +300,10 @@ export default function SwarmExplainerModal({ open, onClose }) {
             <p className="explainer-p">
               The dashboard never acts as a central brain. It simply visualizes what individual agents have decided. Each agent decides strictly from its own local detectors and incoming neighbor packets.
             </p>
-          </section>
+          </section>}
 
           {/* ACO Pheromone Corridor Weighting */}
-          <section>
+          {on('aco-weighting') && <section>
             <h3 className="explainer-h"><Brain size={16} color="#10b981" /> ACO Pheromone Corridor Weighting</h3>
             <PheromoneDiagram />
             <ol className="explainer-rules">
@@ -310,11 +313,11 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 </li>
               ))}
             </ol>
-          </section>
+          </section>}
 
           {/* Fuel & Ambulance Impact */}
-          <section className="explainer-compare">
-            <div className="explainer-card">
+          {(on('fuel-savings') || on('ambulance-wave')) && <section className="explainer-compare">
+            {on('fuel-savings') && <div className="explainer-card">
               <h3><Fuel size={16} color="#c084fc" /> Fuel, CO₂ &amp; Economic Savings</h3>
               <ul className="explainer-list">
                 <li><b>Idling baseline:</b> {FUEL.car_idle_lph} L/h per passenger car, {FUEL.heavy_idle_lph} L/h per heavy commercial vehicle.</li>
@@ -322,8 +325,8 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 <li><code>CO₂ kg = litres × {FUEL.co2_kg_per_l}</code> · <code>₹ saved = litres × ₹{FUEL.inr_per_l}</code></li>
                 <li><b>Delay improvement:</b> Measured as <code>1 − (swarm_idle / fixed_idle)</code> on identical traffic demand.</li>
               </ul>
-            </div>
-            <div className="explainer-card">
+            </div>}
+            {on('ambulance-wave') && <div className="explainer-card">
               <h3><Siren size={16} color="#f43f5e" /> Ambulance Emergency Green Wave</h3>
               <ul className="explainer-list">
                 <li><b>Early corridor preemption:</b> Broadcast along the whole corridor immediately upon siren detection.</li>
@@ -331,11 +334,11 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 <li><b>Hard safety hold:</b> Conflicting traffic remains red until ambulance transit is confirmed, then releases gracefully.</li>
                 <li><b>Measured impact:</b> Zero halting delay along primary response routes.</li>
               </ul>
-            </div>
-          </section>
+            </div>}
+          </section>}
 
           {/* FAQ / Evaluator Answers */}
-          <section>
+          {on('evaluator-qa') && <section>
             <h3 className="explainer-h"><MessageSquareQuote size={16} color="#38bdf8" /> Ready Answers for Project Evaluators &amp; Defense</h3>
             <dl className="explainer-qa">
               {QA.map(([q, a]) => (
@@ -345,7 +348,7 @@ export default function SwarmExplainerModal({ open, onClose }) {
                 </div>
               ))}
             </dl>
-          </section>
+          </section>}
         </div>
       </div>
     </div>
