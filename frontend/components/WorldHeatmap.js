@@ -44,7 +44,7 @@ function sev(j) {
   const q = j.queue || 0, occ = j.occupancy || 0;
   return q > 4 || occ > 0.4 ? 3 : q > 1 || occ > 0.2 ? 2 : 1;
 }
-const HEAT = ['var(--text-muted)', 'var(--status-warn)', 'var(--status-warn)', 'var(--signal-red)'];
+const HEAT = ['var(--text-muted)', 'var(--warn-soft)', 'var(--status-warn)', 'var(--signal-red)'];
 const SEV_NAME = ['no data', 'free flow', 'moderate', 'heavy'];
 const RINGS = [[1.0, 0.18], [0.65, 0.3], [0.35, 0.5]];
 

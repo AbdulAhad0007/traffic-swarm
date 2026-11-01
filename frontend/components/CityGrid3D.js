@@ -52,7 +52,7 @@ function severity(j) {
   const q = j.queue || 0, occ = j.occupancy || 0;
   return q > 4 || occ > 0.4 ? 3 : q > 1 || occ > 0.2 ? 2 : 1;
 }
-const HEAT = ['var(--text-dim)', 'var(--status-warn)', 'var(--status-warn)', 'var(--signal-red)'];
+const HEAT = ['var(--text-dim)', 'var(--warn-soft)', 'var(--status-warn)', 'var(--signal-red)'];
 
 export default function CityGrid3D({ layout, junctions, route = [], selected, onSelect, onOpenIntersection, height = 560 }) {
   const wrapRef = useRef(null);

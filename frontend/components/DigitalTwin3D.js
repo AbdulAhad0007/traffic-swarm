@@ -812,7 +812,7 @@ export default function DigitalTwin3D({
         {/* ═══════════════════════════════════════════════════════════════
             CENTER: Ultra-Realistic 3D Isometric Viewport
            ═══════════════════════════════════════════════════════════════ */}
-        <div className="dt-viewport-card">
+        <div className="dt-viewport-card dt-scene">
           <div className="dt-viewport-badges">
             <span className="viewport-badge">
               ● REAL-TIME MICROSCOPIC DIGITAL TWIN

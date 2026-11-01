@@ -3,7 +3,8 @@
    is declared on [data-theme] too: its var() references then resolve against the nearest theme. */
 
 :root,
-[data-theme='midnight'] {
+[data-theme='midnight'],
+[data-theme='survey-map'] .dt-scene {
   color-scheme: dark;
   --bg-base: #090d16;
   --bg-image:
@@ -131,7 +132,8 @@
 
 /* Shared derived tokens, and the older names the stylesheet still uses until each module is migrated. */
 :root,
-[data-theme] {
+[data-theme],
+[data-theme='survey-map'] .dt-scene {
   --wave: var(--signal-green);
   --bg-surface-elevated: var(--bg-elevated);
   --bg-surface-sunken: var(--bg-sunken);

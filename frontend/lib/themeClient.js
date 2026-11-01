@@ -1,8 +1,13 @@
 // Browser side of theming: applying a theme, and giving canvas and map code the resolved token values.
 import { useEffect, useState } from 'react';
-import { THEMES, normalizeTheme } from './themes.js';
+import { THEMES, isThemeSlug, normalizeTheme } from './themes.js';
 
 const CHANGE_EVENT = 'tsi-theme-change';
+
+export function themeFromCookie(cookie) {
+  const value = cookie.match(/(?:^|; )tsi-theme=([^;]*)/)?.[1];
+  return isThemeSlug(value) ? value : null;
+}
 
 export function loadThemeFonts(slug) {
   const href = THEMES.find(t => t.slug === slug)?.fonts;

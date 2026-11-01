@@ -740,6 +740,7 @@ export default function OsmSignalMap() {
         cv.height = Math.round(h * dpr);
       }
       const C = canvasColorsRef.current;
+      if (!C['--accent']) return;
       const ctx = cv.getContext('2d');
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);

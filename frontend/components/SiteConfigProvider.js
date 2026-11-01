@@ -1,10 +1,10 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import ModuleUnavailable from '@/components/ModuleUnavailable';
 import { ALL_ENABLED, firstEnabledRoute, moduleForRoute } from '@/lib/moduleRegistry';
-import { applyTheme } from '@/lib/themeClient';
+import { applyTheme, themeFromCookie } from '@/lib/themeClient';
 
 const REFRESH_MS = 15000;
 const SiteConfigContext = createContext(ALL_ENABLED);
@@ -13,6 +13,9 @@ const SiteConfigContext = createContext(ALL_ENABLED);
 // Cache Components kept alive in hidden state, which can reappear without a new server request.
 export function SiteConfigProvider({ children }) {
   const [config, setConfig] = useState(ALL_ENABLED);
+
+  // Arriving from the admin area by in-app navigation: restore the theme before paint, without waiting for the fetch.
+  useLayoutEffect(() => { applyTheme(themeFromCookie(document.cookie)); }, []);
 
   useEffect(() => {
     let active = true;

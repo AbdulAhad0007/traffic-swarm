@@ -5,7 +5,7 @@ import { THEMES } from './themes.js';
 const fonts = Object.fromEntries(THEMES.map(t => [t.slug, t.fonts]));
 
 export const themeBootScript = `(function(){try{
-if(location.pathname.indexOf('/admin')===0)return;
+if(location.pathname==='/admin'||location.pathname.indexOf('/admin/')===0)return;
 var m=document.cookie.match(/(?:^|; )tsi-theme=([^;]*)/);var t=m&&m[1];
 var f=${JSON.stringify(fonts)};
 if(!t||!Object.prototype.hasOwnProperty.call(f,t))return;

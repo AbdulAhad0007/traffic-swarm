@@ -6,7 +6,7 @@ import { checkBackendRequest, checkLabRequest } from '../lib/labGuard.js';
 import { hashPassword, verifyPassword } from '../lib/password.js';
 import { DEFAULT_THEME, THEMES, normalizeTheme } from '../lib/themes.js';
 import { themeBootScript } from '../lib/themeBoot.js';
-import { applyTheme } from '../lib/themeClient.js';
+import { applyTheme, themeFromCookie } from '../lib/themeClient.js';
 import { seedTables } from './helpers/fakeServices.mjs';
 
 const sql = readFileSync(new URL('../../db/migrations/001_admin_panel.sql', import.meta.url), 'utf8');
@@ -101,6 +101,43 @@ test('the junction mesh draws its wave in the wave token and says it is an illus
   const css = readFileSync(new URL('../app/styles/system.css', import.meta.url), 'utf8');
   assert.match(css, /\.mesh-wave[^}]*var\(--wave\)/);
   assert.match(css, /prefers-reduced-motion[\s\S]*mesh-/);
+});
+
+const source = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+
+test('boot script only skips the admin area itself', () => {
+  assert.equal(runBoot('tsi-theme=survey-map', '/admin/x').attrs['data-theme'], undefined);
+  assert.equal(runBoot('tsi-theme=survey-map', '/administrator').attrs['data-theme'], 'survey-map');
+});
+
+test('themeFromCookie reads a valid theme and rejects anything else', () => {
+  assert.equal(themeFromCookie('a=1; tsi-theme=night-road'), 'night-road');
+  assert.equal(themeFromCookie('tsi-theme=<script>'), null);
+  assert.equal(themeFromCookie(''), null);
+});
+
+test('public pages restore the cookie theme on mount and the admin pins the whole page', () => {
+  assert.ok(source('../components/SiteConfigProvider.js').includes('applyTheme(themeFromCookie(document.cookie))'));
+  assert.ok(source('../app/admin/layout.js').includes('<AdminThemePin />'));
+});
+
+test('the map canvas waits for resolved colors before drawing', () => {
+  assert.ok(source('../components/OsmSignalMap.js').includes("if (!C['--accent']) return;"));
+});
+
+test('every heat level has its own color', () => {
+  for (const file of ['../components/WorldHeatmap.js', '../components/CityGrid3D.js']) {
+    const text = source(file);
+    const start = text.indexOf('HEAT = [') + 'HEAT = ['.length;
+    const heat = text.slice(start, text.indexOf(']', start)).split(',').map(v => v.trim());
+    assert.equal(heat.length, 4, file);
+    assert.equal(new Set(heat).size, heat.length, file);
+  }
+});
+
+test('the 3D scene keeps a real-world palette on the light theme', () => {
+  assert.ok(source('../app/styles/tokens.css').includes("[data-theme='survey-map'] .dt-scene"));
+  assert.ok(source('../components/DigitalTwin3D.js').includes('dt-scene'));
 });
 
 test('the admin area is pinned to the midnight theme', () => {
