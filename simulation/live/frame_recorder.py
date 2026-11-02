@@ -13,8 +13,10 @@ from __future__ import annotations
 import json, os
 from pathlib import Path
 from simulation.live.network_geometry import build_network3d
+from simulation.live.congestion import load_live_config
 from simulation.live.recorder import write_json_atomic
-from simulation.runtime import tc
+from simulation.live.road_state import RoadMonitor
+from simulation.runtime import tc, traci
 
 CHUNK_FRAMES = 30
 DEFAULT_MAX_BYTES = 200 * 1024 * 1024
@@ -70,12 +72,22 @@ class FrameRecorder:
         self._junction_sample = None
         self._types: dict[str, int] = {}
         self._edges: dict[str, int] = {}
+        self.road_monitor = None
+        self._vehicle_edge: dict[str, int] = {}
+        self._next_road = 0.0
 
     # ------------------------------------------------------------------ hook API
     def on_start(self, session) -> None:
         self.dir.mkdir(parents=True, exist_ok=True)
         network = build_network3d(self.model)
         self._edges = {e["id"]: i for i, e in enumerate(network["edges"])}
+        self._edge_list = network["edges"]
+        self._entered = [0] * len(self._edge_list)
+        self._left = [0] * len(self._edge_list)
+        self.road_monitor = RoadMonitor(self.model, self._edge_list, load_live_config().get("road_state"))
+        self._road_interval = float(self.road_monitor.cfg["sample_interval_s"])
+        for edge in self._edges:
+            traci.edge.subscribe(edge, [tc.LAST_STEP_VEHICLE_NUMBER, tc.LAST_STEP_MEAN_SPEED, tc.VAR_WAITING_TIME])
         write_json_atomic(self.live / "network3d.json", network)
         session.extra_vehicle_vars = [tc.VAR_POSITION, tc.VAR_ANGLE, tc.VAR_TYPE]
         self._write_manifest("running")
@@ -110,16 +122,47 @@ class FrameRecorder:
             speeds.append(round(v[tc.VAR_SPEED], 1))
             waits.append(round(v[tc.VAR_WAITING_TIME]))
             types.append(self._types.setdefault(v[tc.VAR_TYPE], len(self._types)))
-            edges.append(self._edges.get(v[tc.VAR_ROAD_ID], -1))
+            edge = self._edges.get(v[tc.VAR_ROAD_ID], -1)
+            edges.append(edge)
+            before = self._vehicle_edge.get(vid, -1)
+            if edge != before and self.road_monitor is not None:
+                if before >= 0:
+                    self._left[before] += 1
+                if edge >= 0:
+                    self._entered[edge] += 1
+                self._vehicle_edge[vid] = edge
+        if self.road_monitor is not None:
+            for vid in session.arrived_ids:
+                self._vehicle_edge.pop(vid, None)
         frame = {"t": session.now, "ids": ids, "x": xs, "y": ys, "a": angles, "s": speeds, "w": waits, "ty": types, "e": edges,
                  "types": list(self._types),
                  "tl": {tls: [int(v[tc.TL_CURRENT_PHASE]), v[tc.TL_RED_YELLOW_GREEN_STATE]] for tls, v in session.tl_values.items()}}
+        if self.road_monitor is not None:
+            for tls, state in frame["tl"].items():
+                state.append(round(traci.trafficlight.getNextSwitch(tls) - session.now, 1))
+        if self.road_monitor is not None and session.now + 1e-9 >= self._next_road:
+            self._next_road = session.now + self._road_interval
+            frame["r"] = self._sample_roads(session)
         snapshot = self.live_recorder.last_snapshot if self.live_recorder else None
         if snapshot and snapshot["sim_time_s"] != self._junction_sample:
             self._junction_sample = snapshot["sim_time_s"]
             frame["j"] = {"t": snapshot["sim_time_s"],
                           "v": {tid: [j["queue"], j["occupancy"], j["level"]] for tid, j in snapshot["junctions"].items()}}
         self._append(frame)
+
+    def _sample_roads(self, session) -> dict:
+        values = traci.edge.getAllSubscriptionResults()
+        measured = []
+        for edge in self._edge_list:
+            v = values.get(edge["id"], {})
+            lanes = edge["lane_ids"]
+            measured.append((int(v.get(tc.LAST_STEP_VEHICLE_NUMBER, 0)), sum(session.halting(l) for l in lanes),
+                             sum(session.occupancy(l) for l in lanes) / max(1, len(lanes)),
+                             float(v.get(tc.LAST_STEP_MEAN_SPEED, 0.0)), float(v.get(tc.VAR_WAITING_TIME, 0.0))))
+        sample = self.road_monitor.sample(session.now, measured, self._entered, self._left, session.tl_values, tc.TL_RED_YELLOW_GREEN_STATE)
+        self._entered = [0] * len(self._edge_list)
+        self._left = [0] * len(self._edge_list)
+        return sample
 
     def _append(self, frame: dict) -> None:
         if self.count % CHUNK_FRAMES == 0:

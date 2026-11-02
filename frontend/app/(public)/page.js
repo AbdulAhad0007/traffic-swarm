@@ -25,6 +25,7 @@ import { API, LAB, lab, fmt } from '@/lib/api';
 import FuelSavedCard from '@/components/FuelSavedCard';
 import RichDropdown from '@/components/RichDropdown';
 import JunctionMesh from '@/components/JunctionMesh';
+import CommandCenterLoader from '@/components/command/CommandCenterLoader';
 import { useSections } from '@/components/SiteConfigProvider';
 
 const RICH_SCENARIOS = [
@@ -248,7 +249,8 @@ export default function ExperimentsPage() {
   return (
     <>
       {/* Always shown: section toggles control the KPI and run sections below it, not this hero. */}
-      <header className="app-main-header overview-hero">
+      {on('live-city') && <CommandCenterLoader />}
+      {!on('live-city') && <header className="app-main-header overview-hero">
         <div className="overview-hero-text">
           <h1>Traffic Swarm Intelligence Lab</h1>
           <p className="overview-hero-lede">AI swarm intelligence core on the SUMO microscopic simulator.</p>
@@ -260,7 +262,7 @@ export default function ExperimentsPage() {
           </div>
         </div>
         <JunctionMesh />
-      </header>
+      </header>}
 
       {/* Top Telemetry Cards */}
       {on('telemetry-status') && <section className="grid telemetry-top-grid">

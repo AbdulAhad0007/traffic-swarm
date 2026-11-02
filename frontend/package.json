@@ -8,7 +8,7 @@
     "prebuild": "node scripts/copy-cesium-assets.mjs",
     "build": "next build",
     "start": "next start",
-    "test": "node --test --test-concurrency=1 tests/unit.test.mjs tests/theme.guard.test.mjs tests/view3d.test.mjs tests/admin.e2e.test.mjs"
+    "test": "node --test --test-concurrency=1 tests/unit.test.mjs tests/theme.guard.test.mjs tests/view3d.test.mjs tests/command.test.mjs tests/admin.e2e.test.mjs"
   },
   "dependencies": {
     "cesium": "1.146.0",

@@ -19,7 +19,8 @@ import {
   Car,
   MapPin,
   BookOpen,
-  Globe
+  Globe,
+  Cctv
 } from 'lucide-react';
 import SwarmExplainerModal from '@/components/SwarmExplainerModal';
 import { useSiteConfig } from '@/components/SiteConfigProvider';
@@ -34,6 +35,7 @@ const NAV_ITEMS = [
   { href: '/mixed', label: 'Mixed Traffic', icon: Layers, tag: 'MIX', module: 'mixed-traffic' },
 ];
 const VIEW_3D_ITEM = { href: '/3d-view', label: '3D View', icon: Globe, tag: '3DV', module: 'view-3d' };
+const LIVE_CAMERA_ITEM = { href: '/live-camera', label: 'Live Camera', icon: Cctv, tag: 'LCM', module: 'live-camera' };
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -204,6 +206,7 @@ export default function Sidebar() {
             )}
           </button>}
           {moduleOn(VIEW_3D_ITEM.module) && navLink(VIEW_3D_ITEM)}
+          {moduleOn(LIVE_CAMERA_ITEM.module) && navLink(LIVE_CAMERA_ITEM)}
         </nav>
 
         {/* Bottom System Telemetry Widget */}

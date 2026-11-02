@@ -95,7 +95,7 @@ def find_sumo_binary(name: str) -> str | None:
     home = os.environ.get("SUMO_HOME")
     if not home:
         try:
-            import sumo
+            import sumo  # type: ignore[import-not-found]  # optional; pip install eclipse-sumo
             home = getattr(sumo, "SUMO_HOME", None)
             if home and "SUMO_HOME" not in os.environ:
                 os.environ["SUMO_HOME"] = str(home)

@@ -39,7 +39,7 @@ function arrowImage() {
   return canvas;
 }
 
-export function createTwinScene(Cesium, container, network, { onPick, onRenderError }) {
+export function createTwinScene(Cesium, container, network, { onPick, onRenderError, framing = {} }) {
   const { BillboardCollection, BoundingSphere, Cartesian3, CesiumWidget, Credit, EasingFunction, HeadingPitchRange, HeadingPitchRoll,
     HorizontalOrigin, ImageryLayer, LabelCollection, Material, Math: CesiumMath, Matrix4, Model, NearFarScalar,
     PointPrimitiveCollection, PolylineCollection, ScreenSpaceEventHandler, ScreenSpaceEventType, Color, SceneMode,
@@ -434,11 +434,11 @@ export function createTwinScene(Cesium, container, network, { onPick, onRenderEr
     scene.requestRender();
   };
 
-  const flyTo = (center, radius, duration = 0.9) => {
+  const flyTo = (center, radius, duration = 0.9, range = 2.4, pitch = -48) => {
     camera.cancelFlight();
     camera.flyToBoundingSphere(new BoundingSphere(center, radius), {
       duration,
-      offset: new HeadingPitchRange(0, CesiumMath.toRadians(-48), radius * 2.4),
+      offset: new HeadingPitchRange(0, CesiumMath.toRadians(pitch), radius * range),
       easingFunction: EasingFunction.QUADRATIC_IN_OUT,
     });
   };
@@ -446,8 +446,9 @@ export function createTwinScene(Cesium, container, network, { onPick, onRenderEr
   const resetCamera = (duration = 0.9) => {
     following = false;
     followReady = false;
-    const center = bounds ? toWorld((bounds.min_x + bounds.max_x) / 2, (bounds.min_y + bounds.max_y) / 2, 0) : origin;
-    flyTo(center, networkRadius, duration);
+    // `south` moves the view centre, leaving the network clear of a panel along the bottom of the screen.
+    const center = bounds ? toWorld((bounds.min_x + bounds.max_x) / 2, (bounds.min_y + bounds.max_y) / 2 - networkRadius * (framing.south ?? 0), 0) : origin;
+    flyTo(center, networkRadius, duration, framing.range, framing.pitch);
   };
   resetCamera(0);
 
@@ -493,7 +494,9 @@ export function createTwinScene(Cesium, container, network, { onPick, onRenderEr
       const junction = junctions.get(id);
       if (junction) flyTo(junction.position, 90);
     },
-    focusPoint(x, y) { flyTo(toWorld(x, y, 0), 60); },
+    focusPoint(x, y, radius = 60) { flyTo(toWorld(x, y, 0), radius); },
+    // For layers drawn on top of this scene, in the same coordinates.
+    context: () => ({ scene, toWorld, vehiclePosition: id => { const item = active.get(id); return item ? toWorld(item.x, item.y, 3) : null; } }),
     select,
     setFollow(value) {
       followReady = false;

@@ -3,6 +3,20 @@
 // sample: vehicles hold their last reported position and the sample is marked stale.
 const TELEPORT_M = 80;      // Bigger jumps are SUMO teleports or reused ids: snap rather than slide across the map.
 const KEEP_BEHIND_S = 5;
+const TURN_DEG = 10;        // A bigger heading change between samples is drawn as a curve, not a chord.
+
+// Position on the curve leaving a at heading a0 and arriving at b on heading a1. Tangents use the distance actually
+// travelled between the two samples, so the curve stays between them and a stopped vehicle does not move.
+export function turnPoint(ax, ay, a0, bx, by, a1, f) {
+  const chord = Math.hypot(bx - ax, by - ay);
+  const r0 = a0 * Math.PI / 180, r1 = a1 * Math.PI / 180;
+  const f2 = f * f, f3 = f2 * f;
+  const h1 = 2 * f3 - 3 * f2 + 1, h2 = f3 - 2 * f2 + f, h3 = -2 * f3 + 3 * f2, h4 = f3 - f2;
+  return [
+    h1 * ax + h2 * chord * Math.sin(r0) + h3 * bx + h4 * chord * Math.sin(r1),
+    h1 * ay + h2 * chord * Math.cos(r0) + h3 * by + h4 * chord * Math.cos(r1),
+  ];
+}
 
 export function indexFrame(frame) {
   const index = new Map();
@@ -41,6 +55,8 @@ export class FrameBuffer {
     this.frames = [];
     this.junctions = new Map();
     this.junctionTime = null;
+    this.roads = null;
+    this.roadTime = null;
   }
 
   add(frames) {
@@ -63,6 +79,10 @@ export class FrameBuffer {
       if (frame.j && frame.j.t !== this.junctionTime) {
         this.junctionTime = frame.j.t;
         this.junctions = new Map(Object.entries(frame.j.v));
+      }
+      if (frame.r && frame.r.t !== this.roadTime) {
+        this.roadTime = frame.r.t;
+        this.roads = frame.r;
       }
     }
   }
@@ -99,6 +119,12 @@ export class FrameBuffer {
       }
       const ax = a === source ? i : j, bx = a === source ? j : i;
       const jumped = Math.hypot(b.x[bx] - a.x[ax], b.y[bx] - a.y[ax]) > TELEPORT_M;
+      const turn = Math.abs(((b.a[bx] - a.a[ax] + 540) % 360) - 180);
+      if (!jumped && turn > TURN_DEG) {
+        const [x, y] = turnPoint(a.x[ax], a.y[ax], a.a[ax], b.x[bx], b.y[bx], b.a[bx], f);
+        visit(id, x, y, lerpAngle(a.a[ax], b.a[bx], f), source.s[i], source.w[i], source.types[source.ty[i]], source.e[i]);
+        continue;
+      }
       visit(id,
         jumped ? source.x[i] : lerp(a.x[ax], b.x[bx], f),
         jumped ? source.y[i] : lerp(a.y[ax], b.y[bx], f),

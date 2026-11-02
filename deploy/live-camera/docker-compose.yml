@@ -1,0 +1,28 @@
+# Camera infrastructure for Live Camera: Frigate, which includes go2rtc.
+# Not run as part of the project's tests: the development machine has no Docker. Check the image tag against
+# https://docs.frigate.video before relying on it, and put real camera addresses only in frigate.yml on the host.
+#   docker compose -f deploy/live-camera/docker-compose.yml up -d
+# Then, in Live Camera > Camera setup:
+#   Frigate:  http://localhost:5000 (internal port, no login; port 8971 needs a login or token)
+#   go2rtc:   http://localhost:1984, with restream base rtsp://localhost:8554
+services:
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    restart: unless-stopped
+    shm_size: 256mb
+    volumes:
+      - ./frigate.yml:/config/config.yml:ro
+      - frigate-media:/media/frigate
+    # Bound to this machine. Do not publish these ports: 5000, 1984 and 8554 have no authentication by default.
+    ports:
+      - "127.0.0.1:5000:5000"
+      - "127.0.0.1:8971:8971"
+      - "127.0.0.1:1984:1984"
+      - "127.0.0.1:8554:8554"
+    environment:
+      # Referenced from frigate.yml, for example rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@camera/stream
+      FRIGATE_RTSP_USER: ${FRIGATE_RTSP_USER:-}
+      FRIGATE_RTSP_PASSWORD: ${FRIGATE_RTSP_PASSWORD:-}
+
+volumes:
+  frigate-media:

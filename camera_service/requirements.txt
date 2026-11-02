@@ -1,0 +1,13 @@
+# Live Camera service. Installed separately so the simulation and website need none of this.
+# Python 3.10+. Create a venv that can also see simulation/requirements.txt (TraCI, SUMO):
+#   python -m venv --system-site-packages .venv
+# CPU PyTorch, about 200 MB; for an NVIDIA GPU use the index URL for your CUDA version instead:
+#   pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+fastapi>=0.110
+uvicorn>=0.28
+httpx>=0.27
+opencv-python-headless>=4.9
+ultralytics>=8.3     # AGPL-3.0, see THIRD_PARTY_NOTICES.md
+lap>=0.5             # needed by ByteTrack
+psutil>=5.9
+cryptography>=42     # encrypts credentials saved from the admin form

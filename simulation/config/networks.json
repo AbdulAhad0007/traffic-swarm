@@ -64,10 +64,29 @@
       "rows": 5,
       "cols": 5
     },
+    "grid7x7": {"type": "grid", "rows": 7, "cols": 7},
     "grid9x9": {
       "type": "grid",
       "rows": 9,
       "cols": 9
+    },
+    "demo_city": {
+      "type": "grid",
+      "rows": 3,
+      "cols": 4,
+      "grid": {
+        "block_length_m": 110,
+        "fringe_length_m": 70,
+        "lanes": 2
+      },
+      "demand": {
+        "end_s": 3600,
+        "vehicle_mix": "demo_mixed",
+        "straight_veh_per_hour": 320,
+        "turn_veh_per_hour": 90,
+        "emergency": {"first_depart_s": 40, "spacing_s": 240}
+      },
+      "note": "Overview demo: 12 signalised junctions on 2-lane roads, compact enough for vehicles to be seen on screen. Assumed vehicle mix."
     },
     "grid5x5_india": {
       "type": "grid",

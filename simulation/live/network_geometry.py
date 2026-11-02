@@ -48,8 +48,11 @@ def build_network3d(model) -> dict:
         if e.get("function") or not lanes:
             continue
         middle = lanes[len(lanes) // 2]
-        edges.append({"id": e.get("id"), "name": e.get("name"), "lanes": len(lanes),
-                      "length": round(float(middle.get("length", 0)), 1), "shape": _points(middle.get("shape"))})
+        drive = [lane for lane in lanes if lane.get("allow") != "pedestrian"]
+        edges.append({"id": e.get("id"), "name": e.get("name"), "lanes": len(lanes), "drive_lanes": len(drive),
+                      "lane_ids": [lane.get("id") for lane in drive], "speed": round(float(middle.get("speed", 0)), 1),
+                      "length": round(float(middle.get("length", 0)), 1), "shape": _points(middle.get("shape")),
+                      "lane_shapes": [_points(lane.get("shape")) for lane in drive]})
 
     xs = [p[0] for edge in edges for p in edge["shape"]]
     ys = [p[1] for edge in edges for p in edge["shape"]]
@@ -71,5 +74,6 @@ def build_network3d(model) -> dict:
                  for lane, indexes in sorted(by_lane.items()) if lane_shapes.get(lane)]
         signals.append({"id": node["id"], "x": node["x"], "y": node["y"], "streets": node.get("streets", []), "lamps": lamps})
 
-    return {"version": 1, "geo": layout["geo"], "anchor": anchor, "transform": transform, "bounds": bounds,
-            "edges": edges, "signals": signals}
+    from simulation.coordination.hierarchy import partition_regions
+    return {"version": 2, "geo": layout["geo"], "anchor": anchor, "transform": transform, "bounds": bounds,
+            "edges": edges, "signals": signals, "links": layout["links"], "regions": partition_regions(layout["nodes"])}

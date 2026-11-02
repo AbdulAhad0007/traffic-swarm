@@ -9,5 +9,16 @@
     {"name": "heavy",  "max_occupancy": 0.45, "max_queue_per_lane": 6.0},
     {"name": "severe", "max_occupancy": null, "max_queue_per_lane": null}
   ],
-  "no_data_level": "no_data"
+  "no_data_level": "no_data",
+  "road_state": {
+    "description": "Six road levels for the Command Center. Display conventions, not a level-of-service standard. Capacity is estimated as lane metres / vehicle_spacing_m.",
+    "vehicle_spacing_m": 7.5,
+    "occupancy": [0.10, 0.20, 0.35, 0.55],
+    "red_queue_cap_used": 0.5,
+    "blocked_used": 0.85,
+    "blocked_speed_mps": 1.0,
+    "spillback_on_used": 0.85,
+    "spillback_off_used": 0.70,
+    "sample_interval_s": 5
+  }
 }

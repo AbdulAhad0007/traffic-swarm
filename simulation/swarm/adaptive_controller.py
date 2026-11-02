@@ -85,6 +85,8 @@ class AdaptiveController:
         self.use_prediction = bool(s.get("use_prediction", False))
         self.use_green_wave = bool(s.get("use_green_wave", True))
         self.green_wave = None
+        self.supervisor = None
+        self.live_events: list = []
         self.predictor = predictor
         if self.use_prediction and self.predictor is None:
             from simulation.prediction.online import OnlinePredictor
@@ -104,6 +106,10 @@ class AdaptiveController:
                 self.green_wave = GreenWave(self, model, self.settings, self.seed)
             except Exception:
                 self.green_wave = None
+        if self.settings.get("use_hierarchy"):
+            from simulation.coordination.hierarchy import HierarchicalSupervisor
+            from simulation.live.congestion import network_layout
+            self.supervisor = HierarchicalSupervisor(model, self.agents, network_layout(model)["nodes"], self.settings.get("hierarchy"))
         return self.agents
 
     # ------------------------------------------------------------------ neighbour channels
@@ -143,6 +149,8 @@ class AdaptiveController:
                                                  for g in agent.phase_map.greens})
         self.blackboard.prune(now)
         self.blackboard.evaporate()
+        if self.supervisor is not None:
+            self.supervisor.tick(now, occupancy, events)
         records, serving = [], []
         for tid, agent in self.agents.items():
             if not agent.active:
@@ -216,8 +224,10 @@ class AdaptiveController:
                 total, wave_call = self.green_wave.constrain(rec["intersection"], green.index, now, total)
                 if wave_call:
                     rec["green_wave_call"] = wave_call
-            rec["coordinated_total_s"] = round(total, 3)
             obs = observations[rec["intersection"]]
+            if self.supervisor is not None and green is not None:
+                total = self.supervisor.review(rec, green, now, total, obs.elapsed, obs.competing_queue, occupancy, events)
+            rec["coordinated_total_s"] = round(total, 3)
             # Safety gate sees timing, phase state and limits only - never the optimizer score.
             decision = self.safety.validate_green_plan(total, obs.elapsed, green.min_green, risk=0.0,
                                                        competing_red=obs.competing_red,
@@ -269,6 +279,7 @@ class AdaptiveController:
         if self.green_wave is not None:
             self.green_wave.start(session)
         decisions, events, ts, tick_ms, telemetry = [], [], [], [], TelemetryCollector()
+        self.live_events = events
         for agent in self.agents.values():
             events.append({"event": "agent_registered", "time": 0.0, "intersection": agent.tls_id, "mode": agent.mode,
                            "reason": agent.mode_reason, "phase_map_status": agent.phase_map.status,
@@ -307,6 +318,8 @@ class AdaptiveController:
         for hook in self.hooks:
             if hasattr(hook, "report"):
                 summary.update(hook.report())
+        if self.supervisor is not None:
+            summary.update(self.supervisor.report())
         if self.green_wave is not None:
             summary.update(self.green_wave.finish(out))
         summary.update(sumo_kpis(out, summary["vehicles_observed"], summary["vehicles_arrived"], timed_out))

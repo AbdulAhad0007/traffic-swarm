@@ -39,6 +39,8 @@ VARIANTS = {
     'swarm_no_blackboard': ('swarm', 'swarm_no_blackboard', False, {'use_blackboard': False}),
     'swarm_no_pheromone':  ('swarm', 'swarm_no_pheromone', False, {'use_pheromone': False}),
     'swarm_prediction':    ('swarm', 'swarm_prediction', False, {'use_prediction': True}),
+    'swarm_hierarchical':  ('swarm', 'swarm_hierarchical', False, {'use_hierarchy': True}),
+    'swarm_hierarchical_priority': ('swarm', 'swarm_hierarchical_priority', True, {'use_hierarchy': True}),
 }
 DEFAULT_CONTROLLERS = ('fixed', 'swarm')
 
@@ -76,6 +78,10 @@ def build_hooks(variant, cfg, out_dir, settings, has_ambulances, live=False, run
         maps = {t: pm for t, pm in build_all(model, settings).items() if pm.controllable}
         hooks.append(EmergencyPriority(maps, settings, enabled=VARIANTS[variant][2], out_dir=out_dir,
                                        options=emergency_options))
+    if live:
+        # Last, so it copies what the other hooks logged in the same step.
+        from simulation.live.event_journal import JournalHook
+        hooks.append(JournalHook(out_dir, f"{(run_info or {}).get('network')}/{(run_info or {}).get('scenario')}/{variant}"))
     return hooks
 
 def prepare(scenario, seed, root, network=LEGACY_PRESET, config=None, demand_seed=None, osm_file=None,
@@ -105,7 +111,11 @@ def run_variant(variant, seed, cfg, run_dir, settings, max_time=3600.0, gui=None
     s = {**settings, **VARIANTS[variant][3]}
     hooks = build_hooks(variant, cfg, out, s, has_ambulances, live, {**(run_info or {}), 'controller': variant},
                         stop_file, realtime_factor, emergency_options)
-    summary = _controller(variant, seed, settings, gui, hooks, port).run(cfg, out, max_time=max_time)
+    controller = _controller(variant, seed, settings, gui, hooks, port)
+    for hook in hooks:
+        if hasattr(hook, 'bind'):
+            hook.bind(controller)
+    summary = controller.run(cfg, out, max_time=max_time)
     summary['variant'] = variant
     return summary
 

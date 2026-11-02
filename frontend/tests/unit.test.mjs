@@ -1,3 +1,4 @@
+import { checkCameraRequest } from '../lib/cameraGuard.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -10,7 +11,7 @@ import { applyTheme, themeFromCookie } from '../lib/themeClient.js';
 import { seedTables } from './helpers/fakeServices.mjs';
 
 const migration = name => readFileSync(new URL(`../../db/migrations/${name}`, import.meta.url), 'utf8');
-const sql = migration('001_admin_panel.sql') + migration('003_view_3d_module.sql');
+const sql = migration('001_admin_panel.sql') + migration('003_view_3d_module.sql') + migration('004_live_city_section.sql') + migration('005_live_camera_module.sql');
 const lab = path => path.split('/');
 
 // All on except the given entries ('module' or 'module/section').
@@ -146,12 +147,12 @@ test('the admin area is pinned to the midnight theme', () => {
   assert.match(src, /data-theme="midnight"/);
 });
 
-test('the exact nine modules exist once, in sidebar order', () => {
+test('the exact ten modules exist once, in sidebar order', () => {
   assert.deepEqual(MODULES.map(m => [m.name, m.identifier]), [
     ['Overview', 'CORE'], ['Signal Map', 'OSM'], ['Live Lab', 'LIVE'], ['Before / After', 'DUAL'],
-    ['Controllers', 'EVAL'], ['Prediction', 'AI'], ['Mixed Traffic', 'MIX'], ['How It Works', 'VIVA'], ['3D View', '3DV'],
+    ['Controllers', 'EVAL'], ['Prediction', 'AI'], ['Mixed Traffic', 'MIX'], ['How It Works', 'VIVA'], ['3D View', '3DV'], ['Live Camera', 'LCM'],
   ]);
-  assert.equal(MODULES.flatMap(m => m.sections).length, 74);
+  assert.equal(MODULES.flatMap(m => m.sections).length, 91);
 });
 
 test('the migration seeds every registered module and section under the right module', () => {
@@ -180,7 +181,7 @@ test('one section off leaves every other section on', () => {
 
 test('landing route falls through to the first enabled module', () => {
   assert.equal(firstEnabledRoute(configWithout('overview')), '/ghaziabad');
-  assert.equal(firstEnabledRoute(configWithout('overview', 'signal-map', 'live-lab', 'before-after', 'controllers', 'prediction', 'mixed-traffic', 'view-3d')), null);
+  assert.equal(firstEnabledRoute(configWithout('overview', 'signal-map', 'live-lab', 'before-after', 'controllers', 'prediction', 'mixed-traffic', 'view-3d', 'live-camera')), null);
 });
 
 test('every endpoint the UI calls is allowed when everything is on', () => {
@@ -198,7 +199,7 @@ test('every endpoint the UI calls is allowed when everything is on', () => {
 test('shared endpoints stay open while any owner remains, and close with the last', () => {
   assert.equal(checkLabRequest(configWithout('live-lab'), 'GET', lab('options')).allowed, true);
   assert.equal(checkLabRequest(configWithout('before-after'), 'GET', lab('options')).allowed, true);
-  assert.equal(checkLabRequest(configWithout('live-lab', 'before-after', 'view-3d'), 'GET', lab('options')).allowed, false);
+  assert.equal(checkLabRequest(configWithout('live-lab', 'before-after', 'view-3d', 'overview/live-city'), 'GET', lab('options')).allowed, false);
   assert.equal(checkLabRequest(configWithout('controllers'), 'GET', lab('runs')).allowed, true);
   assert.equal(checkLabRequest(configWithout('controllers', 'overview'), 'GET', lab('runs')).allowed, false);
 });
@@ -212,14 +213,14 @@ test('single-owner endpoints follow their section', () => {
 });
 
 test('3D View data follows its module, and it can start experiments only through its run selector', () => {
-  const off = configWithout('view-3d');
+  const off = configWithout('view-3d', 'overview/live-city');
   for (const path of ['jobs/abc123/network3d', 'jobs/abc123/frames']) {
     assert.equal(checkLabRequest(off, 'GET', lab(path)).allowed, false, path);
     assert.equal(checkLabRequest(configWithout('live-lab'), 'GET', lab(path)).allowed, true, path);
   }
   const exp = JSON.stringify({ kind: 'experiment' });
   assert.equal(checkLabRequest(configWithout('live-lab'), 'POST', lab('jobs'), exp).allowed, true);
-  assert.equal(checkLabRequest(configWithout('live-lab', 'view-3d/run-selector'), 'POST', lab('jobs'), exp).allowed, false);
+  assert.equal(checkLabRequest(configWithout('live-lab', 'view-3d/run-selector', 'overview/live-city'), 'POST', lab('jobs'), exp).allowed, false);
 });
 
 test('the 3D View migration starts the module off', () => {
@@ -228,7 +229,7 @@ test('the 3D View migration starts the module off', () => {
 
 test('job creation is decided by its kind', () => {
   const demo = JSON.stringify({ kind: 'demo' }), exp = JSON.stringify({ kind: 'experiment' });
-  const noLive = configWithout('live-lab', 'view-3d');
+  const noLive = configWithout('live-lab', 'view-3d', 'overview/live-city');
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), exp).allowed, false);
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), demo).allowed, true);
   assert.equal(checkLabRequest(noLive, 'POST', lab('jobs'), '{}').allowed, false, 'the lab treats a missing kind as an experiment');
@@ -260,4 +261,42 @@ test('password hashes verify, reject wrong input, and contain no $', () => {
   assert.equal(verifyPassword('x', ''), false);
   assert.equal(verifyPassword('x', 'scrypt:bad'), false);
   assert.notEqual(h, hashPassword('correct horse battery'));
+});
+
+test('Live Camera migration starts the module and public video off', () => {
+  const m = migration('005_live_camera_module.sql');
+  assert.match(m, /\('Live Camera', 'live-camera', 'LCM', false, 10\)/);
+  assert.match(m, /'Public video previews', 'public-video', 8, false/);
+  assert.equal(ALL_ENABLED.modules['live-camera'].sections['public-video'], false, 'a database outage must not open video to the public');
+  assert.equal(buildEffectiveConfig([], []).modules['live-camera'].sections['status-bar'], true, 'other sections keep the usual rule');
+});
+
+test('camera guard: anyone may read status, video needs admin or public-video, every change needs admin', () => {
+  const cam = p => p.split('/');
+  const on = configWithout('live-camera/public-video');
+  assert.equal(checkCameraRequest(on, 'GET', cam('overview'), false).allowed, true);
+  assert.equal(checkCameraRequest(on, 'GET', cam('cameras/C1/frame.jpg'), false).error, 'video_restricted');
+  assert.equal(checkCameraRequest(on, 'GET', cam('cameras/C1/frame.jpg'), true).allowed, true);
+  assert.equal(checkCameraRequest(configWithout(), 'GET', cam('cameras/C1/frame.jpg'), false).allowed, true);
+  for (const [m, p] of [['POST', 'cameras'], ['PATCH', 'cameras/C1'], ['DELETE', 'cameras/C1'], ['POST', 'cameras/C1/reconnect'], ['GET', 'infra'], ['POST', 'infra/frigate'], ['POST', 'signal/mode'], ['POST', 'test-sources']]) {
+    assert.equal(checkCameraRequest(on, m, cam(p), false).error, 'admin_required', `${m} ${p}`);
+    assert.equal(checkCameraRequest(on, m, cam(p), true).allowed, true, `${m} ${p}`);
+  }
+});
+
+test('camera guard: a disabled module closes every endpoint, and unknown paths are refused', () => {
+  const off = configWithout('live-camera');
+  assert.equal(checkCameraRequest(off, 'GET', ['overview'], false).error, 'module_disabled');
+  assert.equal(checkCameraRequest(off, 'GET', ['cameras', 'C1', 'frame.jpg'], true).error, 'module_disabled');
+  assert.equal(checkCameraRequest(configWithout(), 'GET', ['nope'], true).error, 'endpoint_not_allowed');
+  assert.equal(checkCameraRequest(configWithout(), 'GET', ['cameras', '..', '..', 'x'], true).allowed, false);
+});
+
+test('camera guard: the local dev allowance opens video only', () => {
+  const on = configWithout('live-camera/public-video');
+  const local = { localDevVideo: true };
+  assert.equal(checkCameraRequest(on, 'GET', ['cameras', 'C1', 'frame.jpg'], false, local).allowed, true);
+  assert.equal(checkCameraRequest(on, 'GET', ['infra'], false, local).error, 'admin_required');
+  assert.equal(checkCameraRequest(on, 'POST', ['cameras'], false, local).error, 'admin_required');
+  assert.equal(checkCameraRequest(configWithout('live-camera'), 'GET', ['cameras', 'C1', 'frame.jpg'], false, local).error, 'module_disabled');
 });

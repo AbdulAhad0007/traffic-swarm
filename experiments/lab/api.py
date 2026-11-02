@@ -10,12 +10,12 @@ allow-listed values (see jobs.validate_spec), saved runs are addressed by a vali
 that must resolve inside experiments/runs, and reports by a validated name.
 """
 from __future__ import annotations
-import csv, hmac, json, logging, os, re, threading
+import csv, hmac, json, logging, os, re, threading, time
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from experiments.lab.jobs import JobManager, SpecError, PROJECT_ROOT
+from experiments.lab.jobs import JobManager, SpecError, PROJECT_ROOT, TERMINAL
 from experiments.lab.osm_areas import AreaStore, AreaError
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -166,6 +166,41 @@ def live(job_id: str):
             "time_gap_s": (max(times) - min(times)) if len(times) > 1 else None, "layout": layout, "parts": parts}
 
 
+SPEEDS = (1, 2, 5, 10)
+_control_lock = threading.Lock()
+
+
+def _read_control(d: Path) -> dict:
+    return _json(d / "control.json") or {}
+
+
+@app.post("/api/lab/jobs/{job_id}/control")
+def control(job_id: str, body: dict):
+    """Pause, resume or change the pace of a running simulation. The worker applies it at its next step."""
+    j, d = _job(job_id)
+    if j["status"] in TERMINAL:
+        raise HTTPException(409, "this run has already finished")
+    paused, speed = body.get("paused"), body.get("speed")
+    if paused is not None and not isinstance(paused, bool):
+        raise HTTPException(400, "paused must be true or false")
+    if speed is not None and speed not in SPEEDS:
+        raise HTTPException(400, f"speed must be one of {SPEEDS}")
+    with _control_lock:                  # requests run on several threads, and each change builds on the last
+        state = _read_control(d)
+        state.update({k: v for k, v in (("paused", paused), ("speed", speed)) if v is not None})
+        tmp = d / "control.json.tmp"
+        tmp.write_text(json.dumps(state), encoding="utf-8")
+        for attempt in range(5):         # the worker may be reading it at this moment on Windows
+            try:
+                os.replace(tmp, d / "control.json")
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise HTTPException(503, "could not apply the control, try again")
+                time.sleep(0.05)
+    return state
+
+
 @app.post("/api/lab/jobs/{job_id}/stop")
 def stop(job_id: str):
     _job(job_id)
@@ -210,7 +245,21 @@ def job_frames(job_id: str, controller: str | None = None, after: float | None =
     data = read_frames(_live_dir(job_id, controller), after, limit)
     if data is None:
         raise HTTPException(404, "no vehicle data recorded for this run")
+    # A worker that was killed never rewrites its manifest, so the job decides whether this run is still live.
+    if manager.read(job_id)["status"] in TERMINAL and data.get("status") == "running":
+        data["status"] = "interrupted"
+    data["control"] = _read_control(manager.job_dir(job_id))
     return data
+
+
+@app.get("/api/lab/jobs/{job_id}/events")
+def job_events(job_id: str, controller: str | None = None, after: int = Query(0, ge=0), limit: int = Query(500, ge=1, le=2000)):
+    """Journal of agent events newer than id `after`, oldest first, with the latest emergency state."""
+    from simulation.live.event_journal import read_events
+    live_dir = _live_dir(job_id, controller)
+    events = read_events(live_dir, after, limit)
+    return {"journal": events is not None, "events": events or [], "emergency": _json(live_dir / "emergency.json"),
+            "job_status": manager.read(job_id)["status"]}
 
 
 @app.get("/api/lab/jobs/{job_id}/result")

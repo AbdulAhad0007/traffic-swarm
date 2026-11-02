@@ -1,0 +1,22 @@
+# Copy to frigate.yml (ignored by git) and edit. Detection is off here because the Live Camera service runs its own YOLO.
+mqtt:
+  enabled: false
+
+go2rtc:
+  streams:
+    camera_01:
+      - rtsp://{FRIGATE_RTSP_USER}:{FRIGATE_RTSP_PASSWORD}@192.0.2.10:554/stream1
+
+record:
+  enabled: false        # recording video has privacy and legal requirements; turn on only with authorization
+
+detect:
+  enabled: false
+
+cameras:
+  camera_01:
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/camera_01
+          input_args: preset-rtsp-restream
+          roles: [record]

@@ -1,5 +1,14 @@
 # Third-party notices
 
+## Live Camera service
+These are installed or run separately and are not bundled with the website.
+- Ultralytics YOLO and its pretrained weights (`ultralytics`, `yolo11n.pt`): **AGPL-3.0**, <https://github.com/ultralytics/ultralytics>. Offering this service over a network can oblige you to publish your source under the AGPL. A closed-source deployment needs an Ultralytics Enterprise License.
+- ByteTrack, through Ultralytics: MIT
+- OpenCV (`opencv-python-headless`): Apache 2.0; its bundled FFmpeg is LGPL
+- PyTorch: BSD-3-Clause
+- Frigate: MIT, <https://github.com/blakeblackshear/frigate>
+- go2rtc: MIT, <https://github.com/AlexxIT/go2rtc>
+
 ## CesiumJS
 - Package: `cesium` 1.146.0, used by the 3D View module
 - Copyright: Cesium GS, Inc. and contributors

@@ -39,3 +39,12 @@ experiments/evaluation/
 
 # Local brainstorm/plan workspace
 .superpowers/
+
+# Live Camera: frames, models, uploads and encrypted credentials
+camera_service/runtime/
+yolo*.pt
+deploy/live-camera/frigate.yml
+.playwright-mcp/
+
+# Large archives (not for version control)
+*.zip

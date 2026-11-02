@@ -1,11 +1,13 @@
 import { DEFAULT_THEME } from './themes.js';
 
-// The nine public modules and their sections. Shared by server and client, and kept in step with
-// db/migrations/001_admin_panel.sql and 003_view_3d_module.sql (tests/unit.test.mjs compares them).
+// The ten public modules and their sections. Shared by server and client, and kept in step with
+// db/migrations/001_admin_panel.sql, 003_view_3d_module.sql and 005_live_camera_module.sql (tests/unit.test.mjs compares them).
+// A section's optional third entry { defaultOff: true } keeps it off until an administrator turns it on.
 export const MODULES = [
   {
     slug: 'overview', name: 'Overview', identifier: 'CORE', route: '/',
     sections: [
+      ['live-city', 'Live Digital City'],
       ['telemetry-status', 'System telemetry cards'],
       ['kpi-highlights', 'KPI improvement highlights'],
       ['command-center', 'Simulation Command Center'],
@@ -122,6 +124,27 @@ export const MODULES = [
       ['performance-hud', 'Performance indicator'],
     ],
   },
+  {
+    slug: 'live-camera', name: 'Live Camera', identifier: 'LCM', route: '/live-camera',
+    sections: [
+      ['camera-management', 'Camera management'],
+      ['frame-extraction', 'Frame extraction'],
+      ['yolo-processing', 'YOLO processing'],
+      ['traffic-analytics', 'Traffic analytics'],
+      ['agent-integration', 'Agent integration'],
+      ['signal-optimization', 'Signal optimization'],
+      ['test-mode', 'Test mode'],
+      ['public-video', 'Public video previews', { defaultOff: true }],
+      ['status-bar', 'Top status bar'],
+      ['camera-grid', 'Camera grid'],
+      ['pipeline-view', 'Processing pipeline'],
+      ['detection-panel', 'AI detection panel'],
+      ['traffic-panel', 'Traffic intelligence panel'],
+      ['swarm-panel', 'Swarm intelligence panel'],
+      ['signal-panel', 'Signal optimization panel'],
+      ['system-logs', 'System logs'],
+    ],
+  },
 ];
 
 const BY_SLUG = new Map(MODULES.map(m => [m.slug, m]));
@@ -131,16 +154,17 @@ export const hasSection = (moduleSlug, sectionSlug) => !!findModule(moduleSlug)?
 export const moduleForRoute = pathname => MODULES.find(m => m.route === pathname) || null;
 
 // Build the public, effective config from saved rows. A section is available only while its module is.
-// Anything without a row counts as enabled, so a new section cannot vanish before the seed reaches it.
+// Anything without a row counts as enabled, so a new section cannot vanish before the seed reaches it,
+// except a defaultOff section: it exposes something sensitive, so it needs a saved "on".
 export function buildEffectiveConfig(moduleRows = [], sectionRows = []) {
   const modules = {};
   for (const m of MODULES) {
     const row = moduleRows.find(r => r.slug === m.slug);
     const enabled = row ? row.is_enabled === true : true;
     const sections = {};
-    for (const [slug] of m.sections) {
+    for (const [slug, , options] of m.sections) {
       const saved = row ? sectionRows.find(r => r.module_id === row.id && r.slug === slug) : null;
-      sections[slug] = enabled && (saved ? saved.is_enabled === true : true);
+      sections[slug] = enabled && (saved ? saved.is_enabled === true : !options?.defaultOff);
     }
     modules[m.slug] = { enabled, sections };
   }

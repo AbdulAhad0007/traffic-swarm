@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { THEMES } from '../lib/themes.js';
 import { SCENE_TOKENS, hasSceneTokens, toSceneTheme } from '../components/view3d/sceneTheme.js';
-import { FrameBuffer, lerpAngle, signalColor } from '../components/view3d/frameBuffer.js';
+import { FrameBuffer, lerpAngle, signalColor, turnPoint } from '../components/view3d/frameBuffer.js';
 import { QualityController } from '../components/view3d/quality.js';
 
 const css = readFileSync(new URL('../app/styles/tokens.css', import.meta.url), 'utf8');
@@ -121,6 +121,28 @@ test('quality drops on sustained slow frames and does not return to a level that
   assert.equal(q.level, 'low');
   for (let i = 0; i < 25; i++) q.observe(60, 1);
   assert.equal(q.level, 'medium', 'low recovers to the highest level that held');
+});
+
+test('a turning vehicle follows a curve between its samples, and the curve ends on them', () => {
+  const b = new FrameBuffer();
+  b.add([frame(10, [['a', 0, 0, 0]]), frame(11, [['a', 10, 10, 90]])]);
+  const mid = sample(b, 10.5).out.get('a');
+  assert.ok(mid.y > mid.x, 'leaving north, it is further north than east at the midpoint');
+  assert.ok(Math.abs(turnPoint(0, 0, 0, 10, 10, 90, 0)[0]) < 1e-9);
+  assert.ok(Math.abs(turnPoint(0, 0, 0, 10, 10, 90, 1)[1] - 10) < 1e-9);
+});
+
+test('a vehicle that does not move stays still whatever its heading does', () => {
+  assert.deepEqual(turnPoint(5, 5, 0, 5, 5, 90, 0.5), [5, 5]);
+});
+
+test('road samples follow the playhead and are never ahead of it', () => {
+  const b = new FrameBuffer();
+  b.add([frame(5, [], { r: { t: 5, l: [1] } }), frame(10, [], { r: { t: 10, l: [4] } })]);
+  b.updateJunctions(7);
+  assert.equal(b.roads.l[0], 1);
+  b.updateJunctions(10);
+  assert.equal(b.roads.l[0], 4);
 });
 
 test('a brief slow spell changes nothing', () => {

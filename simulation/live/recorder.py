@@ -31,6 +31,11 @@ def write_json_atomic(path: Path, data) -> None:
     os.replace(tmp, path)          # readers never see a half-written file
 
 
+CONTROL_POLL_S = 0.1
+MAX_PAUSE_S = 1800.0
+MAX_CATCH_UP_S = 2.0
+
+
 class LiveRecorder:
     def __init__(self, model, out_dir, run_info: dict | None = None, config: dict | None = None,
                  stop_file: str | Path | None = None, realtime_factor: float | None = None):
@@ -42,6 +47,11 @@ class LiveRecorder:
         self.run_info = dict(run_info or {})
         self.stop_file = Path(stop_file) if stop_file else None
         self.realtime_factor = float(realtime_factor) if realtime_factor else None   # simulated s per wall s
+        # Written by the Lab API, next to the stop file: {"paused": bool, "speed": simulated s per wall s}.
+        self.control_file = self.stop_file.parent / "control.json" if self.stop_file else None
+        self.paused = False
+        self._control_read_at = 0.0
+        self._pace_anchor = None
         self.lanes = tls_incoming_lanes(model)
         self.next_sample = 0.0
         self.next_state = 0.0
@@ -76,11 +86,43 @@ class LiveRecorder:
         if now + 1e-9 >= self.next_state:
             self._write_state(session, "running")
             self.next_state = now + self.state_interval
-        if self.realtime_factor:
-            target = now / self.realtime_factor
-            lag = target - (time.perf_counter() - self._wall0)
-            if lag > 0:
-                time.sleep(min(lag, 1.0))
+        self._pace(now)
+
+    def _read_control(self, wall: float) -> None:
+        if self.control_file is None or wall - self._control_read_at < CONTROL_POLL_S:
+            return
+        self._control_read_at = wall
+        try:
+            control = json.loads(self.control_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return              # no control yet, or the API is replacing the file on Windows: keep the last values
+        self.paused = bool(control.get("paused"))
+        speed = control.get("speed")
+        if speed and float(speed) != self.realtime_factor:
+            self.realtime_factor = float(speed)
+            self._pace_anchor = None
+
+    def _pace(self, now: float) -> None:
+        """Holds the simulation while paused, and keeps it at the chosen simulated-seconds-per-second rate."""
+        self._read_control(time.perf_counter())
+        if self.paused:
+            # SUMO waits for the next TraCI step. Abandoned pauses end, so a closed browser cannot hold a job slot forever.
+            until = time.perf_counter() + MAX_PAUSE_S
+            while self.paused and time.perf_counter() < until and not (self.stop_file and self.stop_file.exists()):
+                time.sleep(CONTROL_POLL_S)
+                self._read_control(time.perf_counter())
+            self.paused = False
+            self._pace_anchor = None
+        if not self.realtime_factor:
+            return
+        wall = time.perf_counter()
+        if self._pace_anchor is None:
+            self._pace_anchor = (wall, now)
+        lag = (now - self._pace_anchor[1]) / self.realtime_factor - (wall - self._pace_anchor[0])
+        if lag > 0:
+            time.sleep(min(lag, 1.0))
+        elif lag < -MAX_CATCH_UP_S:
+            self._pace_anchor = (wall, now)      # fell behind: carry on at the chosen rate instead of racing to catch up
 
     def on_close(self, session) -> None:
         if self._csv is not None:

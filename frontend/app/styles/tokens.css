@@ -56,6 +56,24 @@
   --scene-heat-low: #38bdf8;
   --scene-heat-mid: #a78bfa;
   --scene-heat-high: #f43f5e;
+  --road-free: #2dd4bf;
+  --road-normal: #38bdf8;
+  --road-busy: #facc15;
+  --road-heavy: #fb923c;
+  --road-severe: #f43f5e;
+  --road-blocked: #d946ef;
+  --msg-traffic: #7dd3fc;
+  --msg-proposal: #a78bfa;
+  --msg-congestion: #fbbf24;
+  --msg-central: #e879f9;
+  --msg-signal: #34d399;
+  --msg-emergency: #fb7185;
+  --msg-health: #f87171;
+  --veh-car: #3594ec;
+  --veh-motorcycle: #1fa971;
+  --veh-bus: #a36bf0;
+  --veh-truck: #d96f28;
+  --veh-bicycle: #e0559b;
 }
 
 [data-theme='night-road'] {
@@ -107,6 +125,24 @@
   --scene-heat-low: #ffb000;
   --scene-heat-mid: #ff8a3d;
   --scene-heat-high: #ff5a52;
+  --road-free: #3ddc84;
+  --road-normal: #a3c95b;
+  --road-busy: #ffd166;
+  --road-heavy: #ff9a3d;
+  --road-severe: #ff5a52;
+  --road-blocked: #d65cff;
+  --msg-traffic: #f6f1e3;
+  --msg-proposal: #ffd166;
+  --msg-congestion: #ff9a3d;
+  --msg-central: #d65cff;
+  --msg-signal: #3ddc84;
+  --msg-emergency: #ff5a52;
+  --msg-health: #ff8a80;
+  --veh-car: #3594ec;
+  --veh-motorcycle: #1fa971;
+  --veh-bus: #a36bf0;
+  --veh-truck: #d96f28;
+  --veh-bicycle: #e0559b;
 }
 
 [data-theme='survey-map'] {
@@ -158,6 +194,24 @@
   --scene-heat-low: #006f6b;
   --scene-heat-mid: #d9480f;
   --scene-heat-high: #8f1515;
+  --road-free: #0a7a4f;
+  --road-normal: #006f6b;
+  --road-busy: #a86a00;
+  --road-heavy: #d9480f;
+  --road-severe: #b3161b;
+  --road-blocked: #6b1a8f;
+  --msg-traffic: #005f8a;
+  --msg-proposal: #4b3fa8;
+  --msg-congestion: #b86e00;
+  --msg-central: #7b1fa2;
+  --msg-signal: #0a7a4f;
+  --msg-emergency: #c92a2a;
+  --msg-health: #8f1515;
+  --veh-car: #1f6fd1;
+  --veh-motorcycle: #0f8a5a;
+  --veh-bus: #7a3fc4;
+  --veh-truck: #c8560f;
+  --veh-bicycle: #c2307f;
 }
 
 /* Shared derived tokens, and the older names the stylesheet still uses until each module is migrated. */

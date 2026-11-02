@@ -64,6 +64,8 @@ class Ambulance:
     expired_tls: set = field(default_factory=set)
     requests: list = field(default_factory=list)
     lost: bool = False
+    vtype: str | None = None
+    next_tls: str | None = None
 
 
 class EmergencyPriority:
@@ -175,9 +177,13 @@ class EmergencyPriority:
         except Exception as exc:
             self.events.append({"event": "register_failed", "time": now, "vehicle": vid, "error": type(exc).__name__})
             return
-        self.ambulances[vid] = Ambulance(vid, now, route, tls)
+        amb = self.ambulances[vid] = Ambulance(vid, now, route, tls)
+        try:
+            amb.vtype = self.api.vehicle.getTypeID(vid)
+        except Exception:
+            amb.vtype = None
         self.events.append({"event": "ambulance_departed", "time": now, "vehicle": vid, "route_edges": len(route),
-                            "tls_on_route": tls})
+                            "tls_on_route": tls, "route": route, "vtype": amb.vtype})
 
     def _update(self, amb: Ambulance, now: float, session) -> None:
         try:
@@ -192,6 +198,7 @@ class EmergencyPriority:
         if speed < 0.1 and not amb.stopped:
             amb.stops += 1
         amb.stopped = speed < 0.1
+        amb.next_tls = upcoming[0][0] if upcoming else None
         ahead = {}
         for tls, link, dist, _state in upcoming:
             if dist > float(self.opt["horizon_m"]) or len(ahead) >= int(self.opt["max_tls_ahead"]):
@@ -299,7 +306,8 @@ class EmergencyPriority:
                 "ambulances": [{"id": a.id, "depart_s": a.depart, "arrival_s": a.arrival, "lost": a.lost,
                                 "travel_time_s": None if a.arrival is None else round(a.arrival - a.depart, 1),
                                 "elapsed_s": round((a.arrival or now) - a.depart, 1), "stops": a.stops,
-                                "tls_on_route": a.tls_on_route,
+                                "tls_on_route": a.tls_on_route, "route": a.route, "vtype": a.vtype,
+                                "next_tls": None if a.arrival is not None else a.next_tls,
                                 "requests": [{"tls": r.tls, "status": r.status, "outcome": r.outcome,
                                               "target_phase": r.target_phase} for r in a.requests]}
                                for a in self.ambulances.values()]}

@@ -32,7 +32,7 @@ const clock = seconds => {
   const s = Math.max(0, Math.floor(seconds));
   return `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 };
-const CONNECTION = { connecting: 'Connecting', live: 'Live simulation', recording: 'Recorded run', offline: 'Lab API unreachable' };
+const CONNECTION = { connecting: 'Connecting', live: 'Live simulation', recording: 'Recorded run', offline: 'Lab API unreachable', stale: 'No new data from the simulation' };
 
 function RunPanel({ jobs, jobId, controller, onSelect, labError, options, on }) {
   const [form, setForm] = useState({ network: '', scenario: 'normal' });

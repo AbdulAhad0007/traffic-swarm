@@ -70,7 +70,7 @@ export function startRecordingUpstream(port) {
   const hits = [];
   const server = createServer(async (req, res) => {
     await read(req);
-    hits.push({ method: req.method, url: req.url, gateway: req.headers['x-tsi-gateway-secret'] });
+    hits.push({ method: req.method, url: req.url, gateway: req.headers['x-tsi-gateway-secret'], role: req.headers['x-tsi-role'] });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end('{"upstream":true}');
   });

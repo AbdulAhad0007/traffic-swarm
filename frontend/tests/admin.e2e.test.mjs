@@ -18,20 +18,21 @@ const SAME_ORIGIN = { Origin: BASE };
 const JSON_HEADERS = { 'Content-Type': 'application/json', ...SAME_ORIGIN };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let supabase, lab, backend, next;
+let supabase, lab, backend, camera, next;
 let ipCounter = 0;
 
 before(async () => {
   supabase = await startFakeSupabase(3978, SERVICE_KEY);
   lab = await startRecordingUpstream(3979);
   backend = await startRecordingUpstream(3980);
+  camera = await startRecordingUpstream(3981);
   next = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'start', '-p', String(PORT)], {
     cwd: ROOT,
     stdio: 'ignore',
     env: {
       ...process.env,
       SUPABASE_URL: 'http://127.0.0.1:3978', SUPABASE_SERVICE_ROLE_KEY: SERVICE_KEY,
-      LAB_URL: 'http://127.0.0.1:3979', BACKEND_URL: 'http://127.0.0.1:3980',
+      LAB_URL: 'http://127.0.0.1:3979', BACKEND_URL: 'http://127.0.0.1:3980', CAMERA_URL: 'http://127.0.0.1:3981',
       ADMIN_USERNAME: USER, ADMIN_PASSWORD_HASH: hashPassword(PASS), TSI_GATEWAY_SECRET: GATEWAY,
     },
   });
@@ -42,7 +43,7 @@ before(async () => {
   throw new Error('next start did not come up');
 });
 
-after(() => { next?.kill(); supabase?.close(); lab?.close(); backend?.close(); });
+after(() => { next?.kill(); supabase?.close(); lab?.close(); backend?.close(); camera?.close(); });
 
 // The server caches config for 5 s per instance, and an admin write clears it; a direct seed reset does not.
 beforeEach(async () => {
@@ -188,9 +189,9 @@ test('3. login sets a hardened cookie and opens the dashboard', async () => {
   assert.match(html, /Module Control|AdminDashboard/);
 });
 
-test('4-5. all nine modules appear once, with their sections under the right module', async () => {
+test('4-5. all ten modules appear once, with their sections under the right module', async () => {
   const body = await (await fetch(`${BASE}/api/admin/modules`, { headers: { Cookie: await login() } })).json();
-  assert.deepEqual(body.modules.map(m => m.identifier), ['CORE', 'OSM', 'LIVE', 'DUAL', 'EVAL', 'AI', 'MIX', 'VIVA', '3DV']);
+  assert.deepEqual(body.modules.map(m => m.identifier), ['CORE', 'OSM', 'LIVE', 'DUAL', 'EVAL', 'AI', 'MIX', 'VIVA', '3DV', 'LCM']);
   for (const m of MODULES) {
     const row = body.modules.find(r => r.slug === m.slug);
     assert.deepEqual(row.sections.map(s => s.slug), m.sections.map(([s]) => s));
@@ -274,6 +275,8 @@ test('3D View files and data follow the module', async () => {
   const cookie = await login();
   assert.equal((await fetch(`${BASE}/cesium/Assets/approximateTerrainHeights.json`)).status, 200);
   await toggleModule(cookie, 'view-3d', false);
+  assert.equal((await fetch(`${BASE}/cesium/Assets/approximateTerrainHeights.json`)).status, 200, 'the Overview city still needs them');
+  await toggleSection(cookie, 'overview', 'live-city', false);
   assert.equal((await fetch(`${BASE}/cesium/Assets/approximateTerrainHeights.json`)).status, 403);
   lab.hits.length = 0;
   assert.equal((await fetch(`${BASE}/api/lab/jobs/abc/frames`)).status, 403);
@@ -289,6 +292,7 @@ test('12. APIs enforce the rules before anything reaches the upstream', async ()
   assert.equal((await stop.json()).error, 'module_disabled');
   await toggleModule(cookie, 'live-lab', false);
   await toggleModule(cookie, 'view-3d', false);
+  await toggleSection(cookie, 'overview', 'live-city', false);
   const job = await fetch(`${BASE}/api/lab/api/lab/jobs`, { method: 'POST', body: '{"kind":"experiment"}' });
   assert.equal(job.status, 403);
   assert.equal(lab.hits.length, 0, 'blocked calls never left the proxy');
@@ -354,4 +358,46 @@ test('no secret or secret variable reaches the browser bundle', () => {
       assert.ok(!text.includes(name), `${name} found in ${file}`);
     }
   }
+});
+
+test('Live Camera: the admin toggle controls its route, navigation config and API', async () => {
+  const cookie = await login();
+  camera.hits.length = 0;
+  assert.equal((await siteConfig()).modules['live-camera'].enabled, true);
+  assert.equal((await fetch(`${BASE}/api/camera/overview`)).status, 200);
+  assert.equal(camera.hits[0].role, 'public');
+  assert.equal(camera.hits[0].gateway, GATEWAY);
+  assert.equal((await toggleModule(cookie, 'live-camera', false)).status, 200);
+  assert.equal((await siteConfig()).modules['live-camera'].enabled, false);
+  assert.match(await (await fetch(`${BASE}/live-camera`)).text(), /currently unavailable/);
+  camera.hits.length = 0;
+  for (const path of ['overview', 'stream', 'cameras', 'cameras/C1/frame.jpg']) assert.equal((await fetch(`${BASE}/api/camera/${path}`)).status, 403, path);
+  assert.equal(camera.hits.length, 0, 'a disabled module never reaches the camera service');
+  await toggleModule(cookie, 'live-camera', true);
+  assert.equal((await fetch(`${BASE}/live-camera`)).status, 200);
+  assert.equal((await siteConfig()).modules.overview.enabled, true, 'other modules are untouched');
+});
+
+test('Live Camera: video and changes are refused to the public, and admins are identified to the service', async () => {
+  const cookie = await login();
+  await toggleSection(cookie, 'live-camera', 'public-video', false);
+  camera.hits.length = 0;
+  assert.equal((await fetch(`${BASE}/api/camera/cameras/C1/frame.jpg`)).status, 403);
+  for (const [method, path] of [['POST', 'cameras'], ['POST', 'infra/frigate'], ['POST', 'signal/mode'], ['DELETE', 'cameras/C1'], ['PATCH', 'cameras/C1'], ['POST', 'cameras/C1/reconnect']]) {
+    assert.equal((await fetch(`${BASE}/api/camera/${path}`, { method, headers: SAME_ORIGIN })).status, 401, path);
+  }
+  assert.equal((await fetch(`${BASE}/api/camera/infra`)).status, 401);
+  assert.equal(camera.hits.length, 0, 'refused calls never reach the service');
+  assert.equal((await fetch(`${BASE}/api/camera/cameras`, { method: 'POST', headers: { Cookie: cookie, Origin: 'http://evil.example' } })).status, 403, 'cross-origin');
+  assert.equal((await fetch(`${BASE}/api/camera/cameras/C1/frame.jpg`, { headers: { Cookie: cookie } })).status, 200);
+  assert.equal((await fetch(`${BASE}/api/camera/cameras`, { method: 'POST', headers: { ...JSON_HEADERS, Cookie: cookie }, body: '{}' })).status, 200);
+  assert.deepEqual(camera.hits.map(h => h.role), ['admin', 'admin']);
+  await toggleSection(cookie, 'live-camera', 'public-video', true);
+  assert.equal((await fetch(`${BASE}/api/camera/cameras/C1/frame.jpg`)).status, 200, 'an administrator can open video to visitors');
+});
+
+test('Live Camera: secrets are absent from the browser bundle', () => {
+  const bundle = readdirSync(join(ROOT, '.next/static'), { recursive: true }).filter(f => String(f).endsWith('.js')).map(f => readFileSync(join(ROOT, '.next/static', String(f)), 'utf8')).join('');
+  // TSI_CAMERA_SECRET_KEY may appear by name: the setup form tells administrators to set it.
+  for (const name of ['TSI_GATEWAY_SECRET', 'SUPABASE_SERVICE_ROLE_KEY', 'CAMERA_URL', 'X-TSI-Role']) assert.ok(!bundle.includes(name), name);
 });
